@@ -194,12 +194,23 @@ struct DesignPilotCLI {
             let server = EngineServer()
             let result = try await server.executeGeneration(request: request)
 
-            print("\n✨ Generation Complete for Screen: '\(result.screenName)'")
-            print("   Source: \(result.source.displayName)")
-            print("   Visual Match: \(result.visualDiff.similarityPercentageFormatted)")
-            print("   Generated Files (\(result.generatedFiles.count)):")
+            print("\n✨ Application Generation Complete for: '\(result.screenName)'")
+            print("   Source:            \(result.source.displayName)")
+            print("   Architecture:      \(result.architectureSummary.pattern)")
+            print("   Visual Match:      \(result.visualDiff.similarityPercentageFormatted)")
+            print("   Toolchain Build:   \(result.buildReport.isSuccess ? "✅ Succeeded" : "❌ Failed") (\(String(format: "%.1fs", result.buildReport.durationSeconds))) [Auto-fixed: \(result.buildReport.fixedErrorsCount)]")
+            print("   Automated Tests:   ✅ \(result.testReport.passedTests)/\(result.testReport.totalTests) Passed (\(String(format: "%.2fs", result.testReport.durationSeconds))) [\(result.testReport.testSuites.joined(separator: ", "))]")
+
+            print("\n📁 Generated Architecture Files (\(result.generatedFiles.count)):")
             for file in result.generatedFiles {
-                print("    - [\(file.status.rawValue)] \(file.relativePath) (\(file.lineCount) lines)")
+                print("   [\(file.framework.rawValue)] [\(file.status.rawValue)] \(file.relativePath) (\(file.lineCount) lines)")
+            }
+
+            if !result.architectureSummary.remainingIntegrationPoints.isEmpty {
+                print("\n📋 Post-Integration Requirements:")
+                for point in result.architectureSummary.remainingIntegrationPoints {
+                    print("   - \(point)")
+                }
             }
 
             print("\n🚀 Committing staged files to project...")
@@ -211,7 +222,7 @@ struct DesignPilotCLI {
 
             print("✅ Successfully integrated files into project!")
             print("   Backup created at: \(summary.backupPath)")
-            print("   Rollback command: designpilot rollback --backup-id \(summary.backupId)")
+            print("   Rollback command:  designpilot rollback --backup-id \(summary.backupId)")
         } catch {
             print("❌ Generation failed: \(error.localizedDescription)")
         }

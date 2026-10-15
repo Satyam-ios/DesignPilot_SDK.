@@ -27,33 +27,53 @@ public struct MockEngineClient: EngineClientProtocol {
     ) async throws -> GenerationResult {
         let isPDF = request.source.isPDF
 
-        // Step 1: Validating URL or PDF Document
+        // Stage 1: Validating URL or PDF Document
         onProgress(
             .validatingURL,
-            0.15,
-            isPDF ? "Verifying PDF structure and vector elements..." : "Verifying Figma file permissions..."
+            0.10,
+            isPDF ? "Verifying PDF structure and vector elements..." : "Verifying Figma file permissions and API access..."
         )
-        try await Task.sleep(nanoseconds: 350_000_000)
+        try await Task.sleep(nanoseconds: 200_000_000)
 
-        // Step 2: Retrieving Figma Nodes or PDF Layout
+        // Stage 2: Reading Design Hierarchy
         onProgress(
             .fetchingDesign,
-            0.35,
-            isPDF ? "Extracted page layout, text blocks, and color tokens from PDF" : "Retrieved 24 AutoLayout frames, 8 components, and 12 styles"
+            0.22,
+            isPDF ? "Extracted page layout, text blocks, and vector paths from PDF" : "Retrieved 28 AutoLayout frames, 12 components, and 16 styles"
         )
-        try await Task.sleep(nanoseconds: 400_000_000)
+        try await Task.sleep(nanoseconds: 200_000_000)
 
-        // Step 3: Inspecting Target Project
-        onProgress(.inspectingProject, 0.55, "Detected SwiftUI 6, iOS 16.0+, SF Pro typography conventions")
-        try await Task.sleep(nanoseconds: 350_000_000)
+        // Stage 3: Discovering Screens & Reusable Components
+        onProgress(.discoveringComponents, 0.35, "Identified 3 screens, 4 reusable UI components, and 2 navigation flows")
+        try await Task.sleep(nanoseconds: 200_000_000)
 
-        // Step 4: Synthesizing Code
-        onProgress(.synthesizingCode, 0.75, "Generating adaptive SwiftUI hierarchy with dynamic type...")
-        try await Task.sleep(nanoseconds: 500_000_000)
+        // Stage 4: Planning Architecture
+        onProgress(.planningArchitecture, 0.48, "Formulating modular MVVM architecture, Router coordinator, and Services")
+        try await Task.sleep(nanoseconds: 200_000_000)
 
-        // Step 5: Visual Validation
-        onProgress(.visualValidation, 0.90, "Simulating layout on iPhone 16 Pro & iPad Air... (98.6% match)")
-        try await Task.sleep(nanoseconds: 400_000_000)
+        // Stage 5: Synthesizing Source Files
+        onProgress(.synthesizingCode, 0.62, "Synthesizing views, view models, domain models, and service interfaces...")
+        try await Task.sleep(nanoseconds: 250_000_000)
+
+        // Stage 6: Integrating Navigation
+        onProgress(.integratingNavigation, 0.74, "Wiring type-safe routes, coordinators, and transitions between screens...")
+        try await Task.sleep(nanoseconds: 200_000_000)
+
+        // Stage 7: Building Application
+        onProgress(.buildingApp, 0.84, "Compiling generated application in Xcode / Swift toolchain...")
+        try await Task.sleep(nanoseconds: 200_000_000)
+
+        // Stage 8: Analyzing Build Diagnostics
+        onProgress(.fixingBuildErrors, 0.90, "Auditing compiler diagnostics: 0 errors detected (clean build)")
+        try await Task.sleep(nanoseconds: 150_000_000)
+
+        // Stage 9: Running Automated Tests
+        onProgress(.runningTests, 0.95, "Executed 4 unit tests for ViewModel state machine (100% passed)")
+        try await Task.sleep(nanoseconds: 150_000_000)
+
+        // Stage 10: Visual Validation
+        onProgress(.visualValidation, 0.98, "Simulating layout on iPhone 16 Pro & iPad Air... (99.0% structural match)")
+        try await Task.sleep(nanoseconds: 150_000_000)
 
         let screenTitle = request.source.displayName
         let sanitizedName = screenTitle
@@ -374,6 +394,169 @@ public struct MockEngineClient: EngineClientProtocol {
                 content: tokensCode,
                 status: .created,
                 framework: .designTokens
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/App/\(sanitizedName)AppEntry.swift",
+                content: """
+                import SwiftUI
+
+                public struct \(sanitizedName)AppRootView: View {
+                    @StateObject private var router = AppRouter()
+                    public init() {}
+                    public var body: some View {
+                        AppRouterView(initialRoute: .main)
+                            .environmentObject(router)
+                    }
+                }
+                """,
+                status: .created,
+                framework: .swiftUI
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/Navigation/AppRoute.swift",
+                content: """
+                import Foundation
+
+                public enum AppRoute: Hashable, Codable, Sendable {
+                    case main
+                    case details(itemId: String)
+                    case settings
+                }
+                """,
+                status: .created,
+                framework: .navigation
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/Navigation/AppRouter.swift",
+                content: """
+                import SwiftUI
+
+                @MainActor
+                public final class AppRouter: ObservableObject {
+                    @Published public var path = NavigationPath()
+                    public init() {}
+                    public func navigate(to route: AppRoute) { path.append(route) }
+                    public func goBack() { if !path.isEmpty { path.removeLast() } }
+                    public func popToRoot() { path = NavigationPath() }
+                }
+
+                public struct AppRouterView: View {
+                    @StateObject private var router = AppRouter()
+                    public let initialRoute: AppRoute
+                    public init(initialRoute: AppRoute = .main) { self.initialRoute = initialRoute }
+                    public var body: some View {
+                        NavigationStack(path: $router.path) {
+                            \(sanitizedName)View()
+                        }
+                        .environmentObject(router)
+                    }
+                }
+                """,
+                status: .created,
+                framework: .navigation
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/ViewModels/\(sanitizedName)ViewModel.swift",
+                content: """
+                import Foundation
+
+                @MainActor
+                public final class \(sanitizedName)ViewModel: ObservableObject {
+                    public enum ViewState: Equatable {
+                        case idle, loading, content, error(String)
+                    }
+                    @Published public var state: ViewState = .content
+                    @Published public var isConnected: Bool = true
+                    @Published public var lastSyncDate: Date = Date()
+                    public init() {}
+                    public func loadData() async { state = .content }
+                    public func toggleConnection() { isConnected.toggle() }
+                }
+                """,
+                status: .created,
+                framework: .viewModel
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/Models/\(sanitizedName)Model.swift",
+                content: """
+                import Foundation
+
+                public struct \(sanitizedName)Item: Identifiable, Codable, Sendable, Hashable {
+                    public let id: String
+                    public let title: String
+                    public let isActive: Bool
+                    public init(id: String, title: String, isActive: Bool = true) {
+                        self.id = id
+                        self.title = title
+                        self.isActive = isActive
+                    }
+                }
+                """,
+                status: .created,
+                framework: .model
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/Services/\(sanitizedName)Service.swift",
+                content: """
+                import Foundation
+
+                public protocol \(sanitizedName)ServiceProtocol: Sendable {
+                    func fetchData() async throws -> [\(sanitizedName)Item]
+                }
+
+                public final class \(sanitizedName)Service: \(sanitizedName)ServiceProtocol {
+                    public init() {}
+                    public func fetchData() async throws -> [\(sanitizedName)Item] {
+                        // INTEGRATION POINT: Connect your backend endpoint here
+                        return [\(sanitizedName)Item(id: "node_01", title: "Gateway Active")]
+                    }
+                }
+                """,
+                status: .created,
+                framework: .service
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/Components/ActionCardComponent.swift",
+                content: """
+                import SwiftUI
+
+                public struct ActionCardComponent: View {
+                    public let title: String
+                    public let subtitle: String
+                    public init(title: String, subtitle: String) {
+                        self.title = title
+                        self.subtitle = subtitle
+                    }
+                    public var body: some View {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(title).font(.headline)
+                            Text(subtitle).font(.caption).foregroundColor(.secondary)
+                        }
+                        .padding(14)
+                        .background(Color.dpSecondaryBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+                """,
+                status: .created,
+                framework: .component
+            ),
+            GeneratedFile(
+                relativePath: "\(request.targetDirectory)/Tests/\(sanitizedName)ViewModelTests.swift",
+                content: """
+                import XCTest
+
+                @MainActor
+                final class \(sanitizedName)ViewModelTests: XCTestCase {
+                    func testInitialState() {
+                        let vm = \(sanitizedName)ViewModel()
+                        XCTAssertEqual(vm.state, .content)
+                        XCTAssertTrue(vm.isConnected)
+                    }
+                }
+                """,
+                status: .created,
+                framework: .unitTest
             )
         ]
 
@@ -421,12 +604,47 @@ public struct MockEngineClient: EngineClientProtocol {
             ]
         )
 
+        let archSummary = AppArchitectureSummary(
+            pattern: "MVVM + Navigation Coordinator",
+            discoveredScreensCount: 3,
+            reusableComponentsCount: 4,
+            modelsCount: 2,
+            servicesCount: 1,
+            testsCount: 1,
+            remainingIntegrationPoints: [
+                "Configure live REST/WebSocket API endpoints in \(sanitizedName)Service.swift",
+                "Review remote push notification entitlements for live device alerts"
+            ]
+        )
+
+        let buildReport = BuildReport(
+            isSuccess: true,
+            durationSeconds: 1.2,
+            compilerWarnings: [],
+            compilerErrors: [],
+            fixedErrorsCount: 0,
+            targetEnvironment: "Apple Swift 6.0 (iOS 16.0+)",
+            rawLog: "Build succeeded cleanly: 0 compiler errors."
+        )
+
+        let testReport = TestReport(
+            totalTests: 4,
+            passedTests: 4,
+            failedTests: 0,
+            durationSeconds: 0.32,
+            testSuites: ["\(sanitizedName)ViewModelTests", "NavigationRouteTests"],
+            isSuccess: true
+        )
+
         return GenerationResult(
             source: request.source,
             generatedFiles: files,
             tokens: extractedTokens,
             visualDiff: visualDiff,
-            screenName: sanitizedName
+            screenName: sanitizedName,
+            architectureSummary: archSummary,
+            buildReport: buildReport,
+            testReport: testReport
         )
     }
 

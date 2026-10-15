@@ -16,10 +16,15 @@ public struct FileTreeListView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Staged Output Files (\(files.count))")
-                    .font(.subheadline.weight(.semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Generated Application Files (\(files.count))")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Organized by MVVM + Coordinator architectural layers")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
                 Spacer()
                 Button(action: toggleSelectAll) {
                     Text(selectedFilePaths.count == files.count ? "Deselect All" : "Select All")
@@ -27,7 +32,7 @@ public struct FileTreeListView: View {
                 }
             }
 
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 ForEach(files) { file in
                     HStack(spacing: 10) {
                         Button(action: { toggleSelection(for: file) }) {
@@ -40,6 +45,7 @@ public struct FileTreeListView: View {
                         Image(systemName: iconForFramework(file.framework))
                             .foregroundColor(.blue)
                             .font(.system(size: 14))
+                            .frame(width: 18)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(file.fileName)
@@ -120,10 +126,22 @@ public struct FileTreeListView: View {
             return "swift"
         case .uiKit:
             return "uiwindow.split.2x1"
+        case .navigation:
+            return "arrow.triangle.branch"
+        case .viewModel:
+            return "gearshape.2.fill"
+        case .model:
+            return "cube.box.fill"
+        case .service:
+            return "network"
+        case .component:
+            return "square.stack.3d.up.fill"
         case .designTokens:
             return "paintpalette.fill"
         case .assetCatalog:
             return "photo.stack.fill"
+        case .unitTest:
+            return "checkmark.seal.fill"
         }
     }
 }

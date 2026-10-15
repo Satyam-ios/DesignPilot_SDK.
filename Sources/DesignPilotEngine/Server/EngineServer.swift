@@ -216,45 +216,36 @@ public final class EngineServer: @unchecked Sendable {
         // Step 3: Extract Tokens
         let tokens = tokenExtractor.extract(from: rootNode)
 
-        // Step 4: Parse AST and Synthesize Source Code
+        // Step 4: Parse AST and Synthesize Full Modular Application Architecture
         let screenTitle = figmaURL.documentTitle ?? rootNode.name
         let sanitizedName = screenTitle
             .replacingOccurrences(of: "-", with: " ")
             .capitalized
             .replacingOccurrences(of: " ", with: "")
 
-        let generatedCode = try await aiService.generateCode(
-            rootNode: rootNode,
-            tokens: tokens,
+        let archGen = AppArchitectureGenerator()
+        let archOutput = archGen.generateArchitecture(
             screenName: sanitizedName,
-            framework: request.preferredFramework,
-            projectInfo: projectInfo
+            tokens: tokens,
+            targetDirectory: request.targetDirectory,
+            preferredFramework: request.preferredFramework,
+            sourceName: figmaURL.documentTitle ?? "Figma Design"
         )
 
-        let tokensCode = generateDesignTokensFile(tokens: tokens)
+        // Step 5: Automatic Build Verification, Compiler Error Resolution, and Test Execution
+        let buildRunner = BuildVerificationRunner()
+        let verified = await buildRunner.verifyAndBuild(
+            generatedFiles: archOutput.files,
+            projectRoot: projectInfo.projectRootPath
+        )
 
-        let unstagedFiles = [
-            GeneratedFile(
-                relativePath: "\(request.targetDirectory)/\(sanitizedName)View.swift",
-                content: generatedCode,
-                status: .created,
-                framework: request.preferredFramework
-            ),
-            GeneratedFile(
-                relativePath: "\(request.targetDirectory)/DesignTokens.swift",
-                content: tokensCode,
-                status: .created,
-                framework: .designTokens
-            )
-        ]
-
-        // Step 5: Stage files non-destructively in `.designpilot/staging/`
+        // Step 6: Stage files non-destructively in `.designpilot/staging/`
         let stagedFiles = try fileIntegrator.stageFiles(
-            files: unstagedFiles,
+            files: verified.files,
             projectRoot: FileManager.default.currentDirectoryPath
         )
 
-        // Step 6: Visual Validation
+        // Step 7: Visual Validation
         let ast = autoLayoutParser.parse(rootNode: rootNode)
         let visualDiff = visualValidator.validate(
             referenceNode: rootNode,
@@ -268,7 +259,10 @@ public final class EngineServer: @unchecked Sendable {
             generatedFiles: stagedFiles,
             tokens: tokens,
             visualDiff: visualDiff,
-            screenName: sanitizedName
+            screenName: sanitizedName,
+            architectureSummary: archOutput.summary,
+            buildReport: verified.buildReport,
+            testReport: verified.testReport
         )
     }
 
@@ -280,34 +274,23 @@ public final class EngineServer: @unchecked Sendable {
         let pdfParser = PDFDesignParser()
         let parsed = try pdfParser.parse(source: pdfInfo)
 
-        let generatedCode: String
-        if request.preferredFramework == .uiKit {
-            let uikitGen = UIKitLayoutGenerator()
-            generatedCode = uikitGen.generate(ast: parsed.ast, screenName: parsed.screenName)
-        } else {
-            let swiftGen = SwiftUILayoutGenerator()
-            generatedCode = swiftGen.generate(ast: parsed.ast, screenName: parsed.screenName)
-        }
+        let archGen = AppArchitectureGenerator()
+        let archOutput = archGen.generateArchitecture(
+            screenName: parsed.screenName,
+            tokens: parsed.tokens,
+            targetDirectory: request.targetDirectory,
+            preferredFramework: request.preferredFramework,
+            sourceName: pdfInfo.fileName
+        )
 
-        let tokensCode = generateDesignTokensFile(tokens: parsed.tokens)
-
-        let unstagedFiles = [
-            GeneratedFile(
-                relativePath: "\(request.targetDirectory)/\(parsed.screenName)View.swift",
-                content: generatedCode,
-                status: .created,
-                framework: request.preferredFramework
-            ),
-            GeneratedFile(
-                relativePath: "\(request.targetDirectory)/DesignTokens.swift",
-                content: tokensCode,
-                status: .created,
-                framework: .designTokens
-            )
-        ]
+        let buildRunner = BuildVerificationRunner()
+        let verified = await buildRunner.verifyAndBuild(
+            generatedFiles: archOutput.files,
+            projectRoot: projectInfo.projectRootPath
+        )
 
         let stagedFiles = try fileIntegrator.stageFiles(
-            files: unstagedFiles,
+            files: verified.files,
             projectRoot: FileManager.default.currentDirectoryPath
         )
 
@@ -335,7 +318,10 @@ public final class EngineServer: @unchecked Sendable {
             generatedFiles: stagedFiles,
             tokens: parsed.tokens,
             visualDiff: visualDiff,
-            screenName: parsed.screenName
+            screenName: parsed.screenName,
+            architectureSummary: archOutput.summary,
+            buildReport: verified.buildReport,
+            testReport: verified.testReport
         )
     }
 

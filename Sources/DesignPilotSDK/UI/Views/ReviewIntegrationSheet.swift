@@ -7,7 +7,7 @@ public struct ReviewIntegrationSheet: View {
 
     @State private var selectedFilePaths: Set<String>
     @State private var activeFile: GeneratedFile?
-    @State private var activeTab: Int = 0 // 0: Files & Code, 1: Visual Comparison, 2: Tokens
+    @State private var activeTab: Int = 0 // 0: Architecture & Build, 1: Files & Code, 2: Visual Comparison, 3: Tokens
 
     public init(result: GenerationResult, onIntegrate: @escaping (Set<String>) -> Void) {
         self.result = result
@@ -20,9 +20,10 @@ public struct ReviewIntegrationSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 Picker("Tab", selection: $activeTab) {
-                    Text("Code & Files").tag(0)
-                    Text("Visual Accuracy").tag(1)
-                    Text("Design Tokens").tag(2)
+                    Text("Architecture").tag(0)
+                    Text("Code & Files").tag(1)
+                    Text("Visual Accuracy").tag(2)
+                    Text("Design Tokens").tag(3)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
@@ -33,8 +34,10 @@ public struct ReviewIntegrationSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         if activeTab == 0 {
-                            codeTabContent
+                            architectureTabContent
                         } else if activeTab == 1 {
+                            codeTabContent
+                        } else if activeTab == 2 {
                             VisualComparisonView(report: result.visualDiff)
                         } else {
                             tokensTabContent
@@ -59,6 +62,153 @@ public struct ReviewIntegrationSheet: View {
                 }
             }
         }
+    }
+
+    private var architectureTabContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Pattern Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Generated Application Architecture")
+                        .font(.headline)
+                    Text(result.architectureSummary.pattern)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.blue)
+                }
+                Spacer()
+                Text("\(result.generatedFiles.count) Files")
+                    .font(.caption.weight(.bold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.12))
+                    .foregroundColor(.blue)
+                    .clipShape(Capsule())
+            }
+            .padding(14)
+            .background(Color.dpTertiaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            // Build & Test Status Cards
+            HStack(spacing: 12) {
+                // Toolchain Build Card
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: result.buildReport.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundColor(result.buildReport.isSuccess ? .green : .red)
+                        Text("Toolchain Build")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    Text(result.buildReport.isSuccess ? "Succeeded (\(String(format: "%.1fs", result.buildReport.durationSeconds)))" : "Failed")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(result.buildReport.isSuccess ? .green : .red)
+                    Text("\(result.buildReport.compilerErrors.count) errors • \(result.buildReport.compilerWarnings.count) warnings")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                    if result.buildReport.fixedErrorsCount > 0 {
+                        Text("Auto-fixed: \(result.buildReport.fixedErrorsCount) error(s)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.orange)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(Color.dpSecondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(result.buildReport.isSuccess ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 1)
+                )
+
+                // Automated Tests Card
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: result.testReport.isSuccess ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                            .foregroundColor(result.testReport.isSuccess ? .green : .orange)
+                        Text("Automated Tests")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    Text("\(result.testReport.passedTests)/\(result.testReport.totalTests) Passed (\(String(format: "%.2fs", result.testReport.durationSeconds)))")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(result.testReport.isSuccess ? .green : .orange)
+                    Text(result.testReport.testSuites.joined(separator: ", "))
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(Color.dpSecondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(result.testReport.isSuccess ? Color.green.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 1)
+                )
+            }
+
+            // Architecture Layers Breakdown
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Synthesized Architectural Layers")
+                    .font(.subheadline.weight(.semibold))
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    layerStatCard(icon: "iphone", title: "Screens", count: result.architectureSummary.discoveredScreensCount)
+                    layerStatCard(icon: "square.stack.3d.up.fill", title: "Components", count: result.architectureSummary.reusableComponentsCount)
+                    layerStatCard(icon: "gearshape.2.fill", title: "ViewModels", count: result.architectureSummary.discoveredScreensCount)
+                    layerStatCard(icon: "cube.box.fill", title: "Models & DTOs", count: result.architectureSummary.modelsCount)
+                    layerStatCard(icon: "network", title: "Services", count: result.architectureSummary.servicesCount)
+                    layerStatCard(icon: "checkmark.seal.fill", title: "Unit Tests", count: result.architectureSummary.testsCount)
+                }
+            }
+            .padding(12)
+            .background(Color.dpTertiaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            // Post-Integration Requirements Checklist
+            if !result.architectureSummary.remainingIntegrationPoints.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checklist")
+                            .foregroundColor(.orange)
+                        Text("Post-Integration Requirements")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    ForEach(result.architectureSummary.remainingIntegrationPoints, id: \.self) { item in
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "circle")
+                                .font(.system(size: 8))
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                            Text(item)
+                                .font(.system(size: 12))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color.orange.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+    }
+
+    private func layerStatCard(icon: String, title: String, count: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .foregroundColor(.blue)
+                .font(.system(size: 13))
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                Text("\(count) generated")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            Spacer()
+        }
+        .padding(8)
+        .background(Color.dpSecondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private var codeTabContent: some View {

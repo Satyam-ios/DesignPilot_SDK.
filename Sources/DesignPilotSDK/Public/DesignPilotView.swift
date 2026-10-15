@@ -64,6 +64,8 @@ public struct DesignPilotView: View {
 /// Convenience alias for automatic app generation.
 public typealias DesignPilotAppView = DesignPilotView
 
-#Preview {
-    DesignPilotView()
+struct DesignPilotView_Previews: PreviewProvider {
+    static var previews: some View {
+        DesignPilotView()
+    }
 }

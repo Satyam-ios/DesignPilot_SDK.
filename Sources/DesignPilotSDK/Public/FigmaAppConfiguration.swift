@@ -15,7 +15,7 @@ public enum UIFramework: String, Codable, Sendable, CaseIterable {
 /// generates the complete multi-screen application on launch without manual URL entry.
 public enum FigmaAppConfiguration {
     /// The source Figma design URL to generate.
-    nonisolated(unsafe) public static var figmaURL: String = "https://www.figma.com/proto/z3bsh0M4MFRN7HvwWuYT7e/Untitled?node-id=1-2&p=f&t=s9XgRWCT1Vi2qXly-0&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1"
+    nonisolated(unsafe) public static var figmaURL: String = "https://www.figma.com/design/z3bsh0M4MFRN7HvwWuYT7e/Untitled?node-id=0-1&p=f&t=xR1XUFtfaCIbAGe2-0"
 
     /// Preferred UI framework. Defaults to `.automatic` to match the target project.
     nonisolated(unsafe) public static var uiFramework: UIFramework = .automatic

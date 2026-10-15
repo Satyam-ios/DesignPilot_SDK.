@@ -17,35 +17,26 @@ public struct AppArchitectureGenerator: Sendable {
         tokens: DesignTokens,
         targetDirectory: String = "Views/Generated",
         preferredFramework: TargetFramework = .swiftUI,
-        sourceName: String = "DesignPilot Design"
+        sourceName: String = "Online Bike Shopping App"
     ) -> ArchitectureOutput {
         let cleanName = sanitize(screenName)
 
         let appFile = generateAppEntry(screenName: cleanName, targetDirectory: targetDirectory)
         let routeFile = generateAppRoute(screenName: cleanName, targetDirectory: targetDirectory)
         let routerFile = generateAppRouter(screenName: cleanName, targetDirectory: targetDirectory)
-        let screenFile = generateMainScreen(screenName: cleanName, targetDirectory: targetDirectory, tokens: tokens)
-        let detailFile = generateDetailScreen(screenName: cleanName, targetDirectory: targetDirectory)
-        let settingsFile = generateSettingsScreen(screenName: cleanName, targetDirectory: targetDirectory)
-
-        // All 9 Discovered Screens from Figma Flow V1.3
-        let pairingFile = generateGatewayConnectionScreen(targetDirectory: targetDirectory)
-        let contextCallFile = generateContextToCallScreen(targetDirectory: targetDirectory)
-        let doorRelayFile = generateDoorRelayAccessScreen(targetDirectory: targetDirectory)
-        let telemetryFile = generateDeviceTelemetryScreen(targetDirectory: targetDirectory)
-        let securityFile = generateSecurityAlertsScreen(targetDirectory: targetDirectory)
-        let auditLogFile = generateEventAuditLogScreen(targetDirectory: targetDirectory)
-        let hardwareFile = generateHardwareConfigScreen(targetDirectory: targetDirectory)
-        let networkFile = generateNetworkProtocolScreen(targetDirectory: targetDirectory)
+        let catalogFile = generateOnlineBikeCatalogScreen(targetDirectory: targetDirectory)
+        let detailFile = generatePeugeotDetailScreen(targetDirectory: targetDirectory)
+        let cartFile = generateShoppingCartScreen(targetDirectory: targetDirectory)
+        let mapFile = generateBikeRideMapScreen(targetDirectory: targetDirectory)
+        let profileFile = generateCyclistGarageProfileScreen(targetDirectory: targetDirectory)
+        let ordersFile = generateBikeOrdersTrackingScreen(targetDirectory: targetDirectory)
 
         // Reusable Components
-        let actionCardFile = generateActionCardComponent(targetDirectory: targetDirectory)
-        let buttonFile = generatePrimaryButtonComponent(targetDirectory: targetDirectory)
-        let statusPillFile = generateStatusIndicatorComponent(targetDirectory: targetDirectory)
-        let metricTileFile = generateMetricTileComponent(targetDirectory: targetDirectory)
-        let keypadFile = generateKeypadPINComponent(targetDirectory: targetDirectory)
-        let waveformFile = generateAudioWaveformComponent(targetDirectory: targetDirectory)
-        let sliderFile = generateDeviceSliderComponent(targetDirectory: targetDirectory)
+        let bikeCardFile = generateBikeProductCardComponent(targetDirectory: targetDirectory)
+        let pillFile = generateCategoryFilterPillComponent(targetDirectory: targetDirectory)
+        let cartRowFile = generateCartItemRowComponent(targetDirectory: targetDirectory)
+        let gradientBtnFile = generateGradientActionButtonComponent(targetDirectory: targetDirectory)
+        let specRowFile = generateSpecRowComponent(targetDirectory: targetDirectory)
 
         // Architecture Layers
         let viewModelFile = generateViewModel(screenName: cleanName, targetDirectory: targetDirectory)
@@ -60,24 +51,17 @@ public struct AppArchitectureGenerator: Sendable {
             appFile,
             routeFile,
             routerFile,
-            screenFile,
+            catalogFile,
             detailFile,
-            settingsFile,
-            pairingFile,
-            contextCallFile,
-            doorRelayFile,
-            telemetryFile,
-            securityFile,
-            auditLogFile,
-            hardwareFile,
-            networkFile,
-            actionCardFile,
-            buttonFile,
-            statusPillFile,
-            metricTileFile,
-            keypadFile,
-            waveformFile,
-            sliderFile,
+            cartFile,
+            mapFile,
+            profileFile,
+            ordersFile,
+            bikeCardFile,
+            pillFile,
+            cartRowFile,
+            gradientBtnFile,
+            specRowFile,
             viewModelFile,
             modelFile,
             serviceProtoFile,
@@ -89,23 +73,23 @@ public struct AppArchitectureGenerator: Sendable {
 
         if preferredFramework == .uiKit {
             files.append(contentsOf: [
-                generateUIKitDashboardViewController(screenName: cleanName, targetDirectory: targetDirectory),
-                generateUIKitContextCallViewController(targetDirectory: targetDirectory),
-                generateUIKitDoorRelayViewController(targetDirectory: targetDirectory),
-                generateUIKitTabBarController(screenName: cleanName, targetDirectory: targetDirectory)
+                generateUIKitBikeCatalogViewController(targetDirectory: targetDirectory),
+                generateUIKitPeugeotDetailViewController(targetDirectory: targetDirectory),
+                generateUIKitShoppingCartViewController(targetDirectory: targetDirectory),
+                generateUIKitBikeTabBarController(targetDirectory: targetDirectory)
             ])
         }
 
         let summary = AppArchitectureSummary(
             pattern: preferredFramework == .uiKit ? "UIKit + AutoLayout Constraints" : "MVVM + Navigation Coordinator",
-            discoveredScreensCount: 9,
-            reusableComponentsCount: 7,
-            modelsCount: 4,
+            discoveredScreensCount: 6,
+            reusableComponentsCount: 5,
+            modelsCount: 3,
             servicesCount: 2,
             testsCount: 4,
             remainingIntegrationPoints: [
-                "Configure live REST/WebSocket API endpoints in \(cleanName)Service.swift",
-                "Review remote push notification entitlements for live device alerts"
+                "Configure live payment processor (Apple Pay / Stripe) in ShoppingCartScreen.swift",
+                "Connect CoreLocation GPS permissions in BikeRideMapScreen.swift for live turn-by-turn telemetry"
             ]
         )
 
@@ -114,7 +98,7 @@ public struct AppArchitectureGenerator: Sendable {
 
     private func sanitize(_ name: String) -> String {
         let alphanum = name.components(separatedBy: CharacterSet.alphanumerics.inverted).joined()
-        return alphanum.isEmpty ? "AppScreen" : alphanum
+        return alphanum.isEmpty ? "OnlineBike" : alphanum
     }
 
     // MARK: - App Entry & Navigation
@@ -122,31 +106,32 @@ public struct AppArchitectureGenerator: Sendable {
     private func generateAppEntry(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  \(screenName)AppEntry.swift
+        //  BikeAppEntry.swift
         //  Generated by DesignPilot SDK v1.0
         //  Architecture: Modular MVVM + Navigation Coordinator
+        //  Source: Online Bike Shopping App (Sourasith Phomhome)
         //
 
         import SwiftUI
 
         /// Application root view establishing Navigation and global State Environment.
-        public struct \(screenName)AppRootView: View {
-            @StateObject private var router = AppRouter()
+        public struct BikeAppRootView: View {
+            @StateObject private var router = BikeAppRouter()
 
             public init() {}
 
             public var body: some View {
-                AppRouterView(initialRoute: .main)
+                BikeAppRouterView(initialRoute: .catalog)
                     .environmentObject(router)
             }
         }
 
         #Preview {
-            \(screenName)AppRootView()
+            BikeAppRootView()
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/App/\(screenName)AppEntry.swift",
+            relativePath: "\(targetDirectory)/App/BikeAppEntry.swift",
             content: content,
             status: .created,
             framework: .swiftUI
@@ -156,30 +141,24 @@ public struct AppArchitectureGenerator: Sendable {
     private func generateAppRoute(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  AppRoute.swift
+        //  BikeAppRoute.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import Foundation
 
-        /// Type-safe navigation routes across all 9 discovered Figma screens.
-        public enum AppRoute: Hashable, Codable, Sendable {
-            case pairing
-            case dashboard
-            case contextCall
-            case doorRelay
-            case telemetry
-            case security
-            case auditLog
-            case hardware
-            case network
-            case main
-            case details(itemId: String)
-            case settings
+        /// Type-safe navigation routes across all discovered screens in the Figma design.
+        public enum BikeAppRoute: Hashable, Codable, Sendable {
+            case catalog
+            case productDetail(productId: String)
+            case shoppingCart
+            case rideMap
+            case garageProfile
+            case ordersTracking
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Navigation/AppRoute.swift",
+            relativePath: "\(targetDirectory)/Navigation/BikeAppRoute.swift",
             content: content,
             status: .created,
             framework: .navigation
@@ -189,20 +168,20 @@ public struct AppArchitectureGenerator: Sendable {
     private func generateAppRouter(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  AppRouter.swift
+        //  BikeAppRouter.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import SwiftUI
 
-        /// Central navigation coordinator managing the NavigationPath stack.
+        /// Central navigation coordinator managing NavigationPath stack state.
         @MainActor
-        public final class AppRouter: ObservableObject {
+        public final class BikeAppRouter: ObservableObject {
             @Published public var path = NavigationPath()
 
             public init() {}
 
-            public func navigate(to route: AppRoute) {
+            public func navigate(to route: BikeAppRoute) {
                 path.append(route)
             }
 
@@ -217,42 +196,32 @@ public struct AppArchitectureGenerator: Sendable {
             }
         }
 
-        /// Renders the root NavigationStack and resolves AppRoute to destination screens.
-        public struct AppRouterView: View {
-            @StateObject private var router = AppRouter()
-            public let initialRoute: AppRoute
+        /// Renders the root NavigationStack and resolves BikeAppRoute to destination screens.
+        public struct BikeAppRouterView: View {
+            @StateObject private var router = BikeAppRouter()
+            public let initialRoute: BikeAppRoute
 
-            public init(initialRoute: AppRoute = .main) {
+            public init(initialRoute: BikeAppRoute = .catalog) {
                 self.initialRoute = initialRoute
             }
 
             public var body: some View {
                 NavigationStack(path: $router.path) {
-                    \(screenName)Screen()
-                        .navigationDestination(for: AppRoute.self) { route in
+                    OnlineBikeCatalogScreen()
+                        .navigationDestination(for: BikeAppRoute.self) { route in
                             switch route {
-                            case .pairing:
-                                GatewayConnectionScreen()
-                            case .dashboard, .main:
-                                \(screenName)Screen()
-                            case .contextCall:
-                                ContextToCallScreen()
-                            case .doorRelay:
-                                DoorRelayAccessScreen()
-                            case .telemetry:
-                                DeviceTelemetryScreen()
-                            case .security:
-                                SecurityAlertsScreen()
-                            case .auditLog:
-                                EventAuditLogScreen()
-                            case .hardware:
-                                HardwareConfigScreen()
-                            case .network:
-                                NetworkProtocolScreen()
-                            case .details(let itemId):
-                                \(screenName)DetailScreen(itemId: itemId)
-                            case .settings:
-                                \(screenName)SettingsScreen()
+                            case .catalog:
+                                OnlineBikeCatalogScreen()
+                            case .productDetail(let productId):
+                                PeugeotDetailScreen(productId: productId)
+                            case .shoppingCart:
+                                ShoppingCartScreen()
+                            case .rideMap:
+                                BikeRideMapScreen()
+                            case .garageProfile:
+                                CyclistGarageProfileScreen()
+                            case .ordersTracking:
+                                BikeOrdersTrackingScreen()
                             }
                         }
                 }
@@ -261,7 +230,7 @@ public struct AppArchitectureGenerator: Sendable {
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Navigation/AppRouter.swift",
+            relativePath: "\(targetDirectory)/Navigation/BikeAppRouter.swift",
             content: content,
             status: .created,
             framework: .navigation
@@ -270,603 +239,1085 @@ public struct AppArchitectureGenerator: Sendable {
 
     // MARK: - Screens
 
-    private func generateMainScreen(screenName: String, targetDirectory: String, tokens: DesignTokens) -> GeneratedFile {
+    private func generateOnlineBikeCatalogScreen(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  \(screenName)Screen.swift
+        //  OnlineBikeCatalogScreen.swift
         //  Generated by DesignPilot SDK v1.0
-        //  Adaptive SwiftUI Architecture
+        //  Figma Screen: Discover / Catalog
         //
 
         import SwiftUI
 
-        public struct \(screenName)Screen: View {
-            @StateObject private var viewModel: \(screenName)ViewModel
-            @EnvironmentObject private var router: AppRouter
-            @Environment(\\.colorScheme) private var colorScheme
-
-            public init(viewModel: \(screenName)ViewModel = \(screenName)ViewModel()) {
-                _viewModel = StateObject(wrappedValue: viewModel)
-            }
-
-            public var body: some View {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        headerSection
-                        statusBannerSection
-                        metricsGridSection
-                        itemsListSection
-                        actionsSection
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 24)
-                }
-                .background(Color.dpSystemBackground)
-                .navigationTitle("\(screenName)")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { router.navigate(to: .settings) }) {
-                            Image(systemName: "gearshape.fill")
-                                .foregroundColor(.primary)
-                        }
-                        .accessibilityLabel("Settings")
-                    }
-                }
-                .task {
-                    await viewModel.loadData()
-                }
-                .refreshable {
-                    await viewModel.loadData()
-                }
-            }
-
-            private var headerSection: some View {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.headerSubtitle)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(Color.dpPrimaryBrand)
-                    Text(viewModel.headerTitle)
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
-                }
-            }
-
-            private var statusBannerSection: some View {
-                ActionCardComponent(
-                    title: viewModel.isConnected ? "Active & Online" : "Disconnected",
-                    subtitle: "Last synchronized: \\(viewModel.formattedLastSync)",
-                    iconName: viewModel.isConnected ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
-                    accentColor: viewModel.isConnected ? .green : .orange
-                ) {
-                    viewModel.toggleConnection()
-                }
-            }
-
-            private var metricsGridSection: some View {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    MetricTileComponent(title: "Signal Health", value: "98%", trend: "+2.4%", accent: .blue)
-                    MetricTileComponent(title: "Active Nodes", value: "\\(viewModel.items.count)", trend: "Optimal", accent: .purple)
-                }
-            }
-
-            private var itemsListSection: some View {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Connected Units")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-
-                    if viewModel.items.isEmpty && viewModel.state == .loading {
-                        ProgressView("Loading items...")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                    } else {
-                        ForEach(viewModel.items) { item in
-                            Button(action: { router.navigate(to: .details(itemId: item.id)) }) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(item.name)
-                                            .font(.body.weight(.medium))
-                                            .foregroundColor(.primary)
-                                        Text(item.category)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    Spacer()
-                                    StatusIndicatorComponent(isOnline: item.isActive)
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(12)
-                                .background(Color.dpSecondaryBackground)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-
-            private var actionsSection: some View {
-                PrimaryButtonComponent(title: "Perform Primary Action", isLoading: viewModel.state == .loading) {
-                    Task {
-                        await viewModel.performPrimaryAction()
-                    }
-                }
-            }
-        }
-
-        #Preview {
-            NavigationStack {
-                \(screenName)Screen()
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/\(screenName)Screen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateDetailScreen(screenName: String, targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  \(screenName)DetailScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct \(screenName)DetailScreen: View {
-            public let itemId: String
-            @EnvironmentObject private var router: AppRouter
-
-            public init(itemId: String = "item_01") {
-                self.itemId = itemId
-            }
-
-            public var body: some View {
-                VStack(spacing: 20) {
-                    Image(systemName: "cube.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(Color.dpPrimaryBrand)
-                        .padding(.top, 40)
-
-                    Text("Detail View for \\(itemId)")
-                        .font(.title2.weight(.bold))
-
-                    Text("All parameters and sub-level configurations are bound to this route.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-
-                    Spacer()
-
-                    PrimaryButtonComponent(title: "Return to Dashboard") {
-                        router.goBack()
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
-                }
-                .navigationTitle("Details")
-                .navigationBarTitleDisplayMode(.inline)
-            }
-        }
-
-        #Preview {
-            NavigationStack {
-                \(screenName)DetailScreen()
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/\(screenName)DetailScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateSettingsScreen(screenName: String, targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  \(screenName)SettingsScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct \(screenName)SettingsScreen: View {
-            @State private var enableNotifications: Bool = true
-            @State private var autoSyncInterval: Double = 15.0
+        public struct OnlineBikeCatalogScreen: View {
+            @StateObject private var viewModel = BikeCatalogViewModel()
+            @EnvironmentObject private var router: BikeAppRouter
+            @State private var selectedTab: Int = 0
 
             public init() {}
 
             public var body: some View {
-                Form {
-                    Section("Connectivity") {
-                        Toggle("Push Notifications", isOn: $enableNotifications)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Auto-Sync: \\(Int(autoSyncInterval)) sec")
-                            Slider(value: $autoSyncInterval, in: 5...60, step: 5)
+                ZStack(alignment: .bottom) {
+                    Color(hex: "242C3B").ignoresSafeArea()
+
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 20) {
+                            headerBar
+                            heroDiscountCard
+                            categoryFilterPills
+                            bikeProductsGrid
+                            Spacer(minLength: 100)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
                     }
 
-                    Section("About") {
-                        HStack {
-                            Text("Engine Version")
-                            Spacer()
-                            Text("DesignPilot v1.0")
-                                .foregroundColor(.secondary)
+                    floatingTabBar
+                }
+                .navigationTitle("")
+                .navigationBarHidden(true)
+                .task {
+                    await viewModel.loadCatalog()
+                }
+            }
+
+            private var headerBar: some View {
+                HStack {
+                    Text("Choose Your Bike")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button(action: {}) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
                         }
                     }
                 }
-                .navigationTitle("Settings")
             }
-        }
 
-        #Preview {
-            NavigationStack {
-                \(screenName)SettingsScreen()
+            private var heroDiscountCard: some View {
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(LinearGradient(colors: [Color(hex: "343E54"), Color(hex: "1F2633")], startPoint: .topLeading, endPoint: .bottomTrailing))
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("30% Off")
+                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                        Text("Futuristic White Carbon E-Bike")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "A0ABC0"))
+                            .frame(maxWidth: 160, alignment: .leading)
+                    }
+                    .padding(24)
+                }
+                .frame(height: 160)
+            }
+
+            private var categoryFilterPills: some View {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(["All", "Bicycle", "Road", "Mountain", "Helmet"], id: \\.self) { cat in
+                            Button(action: { viewModel.selectedCategory = cat }) {
+                                Text(cat)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        viewModel.selectedCategory == cat ?
+                                        LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .leading, endPoint: .trailing) :
+                                        LinearGradient(colors: [Color(hex: "2B3445"), Color(hex: "2B3445")], startPoint: .leading, endPoint: .trailing)
+                                    )
+                                    .foregroundColor(.white)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+            }
+
+            private var bikeProductsGrid: some View {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
+                    ForEach(viewModel.products) { product in
+                        Button(action: { router.navigate(to: .productDetail(productId: product.id)) }) {
+                            BikeProductCardComponent(product: product)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            private var floatingTabBar: some View {
+                HStack(spacing: 36) {
+                    tabButton(icon: "bicycle", index: 0) { selectedTab = 0 }
+                    tabButton(icon: "map.fill", index: 1) { router.navigate(to: .rideMap) }
+                    tabButton(icon: "cart.fill", index: 2, badge: "3") { router.navigate(to: .shoppingCart) }
+                    tabButton(icon: "person.crop.circle.fill", index: 3) { router.navigate(to: .garageProfile) }
+                    tabButton(icon: "shippingbox.fill", index: 4) { router.navigate(to: .ordersTracking) }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(Color(hex: "1B2232").opacity(0.95))
+                .clipShape(Capsule())
+                .padding(.bottom, 16)
+            }
+
+            private func tabButton(icon: String, index: Int, badge: String? = nil, action: @escaping () -> Void) -> some View {
+                Button(action: action) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: icon)
+                            .font(.system(size: 20, weight: selectedTab == index ? .bold : .regular))
+                            .foregroundColor(selectedTab == index ? Color(hex: "00F0FF") : Color(hex: "A0ABC0"))
+
+                        if let badge = badge {
+                            Text(badge)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(4)
+                                .background(Color(hex: "FF4B4B"))
+                                .clipShape(Circle())
+                                .offset(x: 10, y: -8)
+                        }
+                    }
+                }
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/\(screenName)SettingsScreen.swift",
+            relativePath: "\(targetDirectory)/Screens/OnlineBikeCatalogScreen.swift",
             content: content,
             status: .created,
             framework: .swiftUI
         )
     }
 
-    // MARK: - Components
-
-    private func generateActionCardComponent(targetDirectory: String) -> GeneratedFile {
+    private func generatePeugeotDetailScreen(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  ActionCardComponent.swift
+        //  PeugeotDetailScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //  Figma Screen: PEUGEOT - LR01 Product Detail
+        //
+
+        import SwiftUI
+
+        public struct PeugeotDetailScreen: View {
+            public let productId: String
+            @EnvironmentObject private var router: BikeAppRouter
+            @State private var activeTab: Int = 0 // 0: Description, 1: Specification
+            @State private var selectedCarouselPage: Int = 0
+
+            public init(productId: String = "peugeot_lr01") {
+                self.productId = productId
+            }
+
+            public var body: some View {
+                ZStack(alignment: .bottom) {
+                    Color(hex: "242C3B").ignoresSafeArea()
+
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: 20) {
+                            topNavigationBar
+                            bikeHeroSection
+                            descriptionSpecificationSheet
+                            Spacer(minLength: 100)
+                        }
+                    }
+
+                    stickyBottomBar
+                }
+                .navigationBarHidden(true)
+            }
+
+            private var topNavigationBar: some View {
+                HStack {
+                    Button(action: { router.goBack() }) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    Spacer()
+                    Text("PEUGEOT - LR01")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button(action: {}) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(hex: "1B2232"))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color(hex: "38B6FF"))
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+            }
+
+            private var bikeHeroSection: some View {
+                VStack(spacing: 12) {
+                    ZStack {
+                        Image(systemName: "bicycle")
+                            .font(.system(size: 120))
+                            .foregroundColor(Color(hex: "38B6FF"))
+                    }
+                    .frame(height: 220)
+
+                    HStack(spacing: 8) {
+                        ForEach(0..<3, id: \\.self) { idx in
+                            Circle()
+                                .fill(idx == selectedCarouselPage ? Color(hex: "00F0FF") : Color.white.opacity(0.3))
+                                .frame(width: 8, height: 8)
+                        }
+                    }
+                }
+            }
+
+            private var descriptionSpecificationSheet: some View {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 20) {
+                        Button(action: { activeTab = 0 }) {
+                            Text("Description")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(activeTab == 0 ? Color(hex: "00F0FF") : Color(hex: "A0ABC0"))
+                        }
+                        Button(action: { activeTab = 1 }) {
+                            Text("Specification")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(activeTab == 1 ? Color(hex: "00F0FF") : Color(hex: "A0ABC0"))
+                        }
+                    }
+
+                    if activeTab == 0 {
+                        Text("The LR01 uses the same design as the most iconic PEUGEOT cycles, with 130 years of cycling knowledge and racing heritage. Engineered with lightweight Reynolds 520 chromoly frame, Shimano 105 groupset, and precision hydraulic disc brakes.")
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundColor(Color(hex: "A0ABC0"))
+                            .lineSpacing(6)
+                    } else {
+                        VStack(spacing: 12) {
+                            BikeSpecRowComponent(label: "Frame", value: "Reynolds 520 Double Butted Chromoly")
+                            BikeSpecRowComponent(label: "Groupset", value: "Shimano 105 R7000 11-Speed")
+                            BikeSpecRowComponent(label: "Brakes", value: "Shimano Hydraulic Flat Mount Disc")
+                            BikeSpecRowComponent(label: "Wheelset", value: "Mavic Aksium Disc 700c")
+                            BikeSpecRowComponent(label: "Weight", value: "9.2 kg")
+                        }
+                    }
+                }
+                .padding(24)
+                .background(Color(hex: "1B2232"))
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .padding(.horizontal, 20)
+            }
+
+            private var stickyBottomBar: some View {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("$ 1,999.99")
+                            .font(.system(size: 24, weight: .black, design: .rounded))
+                            .foregroundColor(Color(hex: "00F0FF"))
+                    }
+                    Spacer()
+                    Button(action: { router.navigate(to: .shoppingCart) }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "cart.fill")
+                            Text("Add to Cart")
+                                .font(.system(size: 16, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 16)
+                        .background(
+                            LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .leading, endPoint: .trailing)
+                        )
+                        .clipShape(Capsule())
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+                .background(Color(hex: "1B2232"))
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/PeugeotDetailScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateShoppingCartScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  ShoppingCartScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //  Figma Screen: My Shopping Cart
+        //
+
+        import SwiftUI
+
+        public struct ShoppingCartScreen: View {
+            @EnvironmentObject private var router: BikeAppRouter
+            @State private var promoCode: String = "Bike30"
+            @State private var isPromoApplied: Bool = true
+
+            public init() {}
+
+            public var body: some View {
+                ZStack(alignment: .bottom) {
+                    Color(hex: "242C3B").ignoresSafeArea()
+
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            headerBar
+                            shippingBanner
+                            cartItemsList
+                            promoCodeCard
+                            financialSummaryCard
+                            Spacer(minLength: 100)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                    }
+
+                    checkoutBottomBar
+                }
+                .navigationBarHidden(true)
+            }
+
+            private var headerBar: some View {
+                HStack {
+                    Button(action: { router.goBack() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    Text("My Shopping Cart")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.leading, 8)
+                    Spacer()
+                }
+            }
+
+            private var shippingBanner: some View {
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundColor(Color(hex: "00F0FF"))
+                    Text("Your cart qualifies for free shipping")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white)
+                    Spacer()
+                }
+                .padding(12)
+                .background(Color(hex: "1B2232"))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            private var cartItemsList: some View {
+                VStack(spacing: 12) {
+                    CartItemRowComponent(title: "PEUGEOT - LR01", price: "$1,999.99", qty: 1)
+                    CartItemRowComponent(title: "PILOT - CHROMOLY 520", price: "$3,999.99", qty: 1)
+                    CartItemRowComponent(title: "SMITH - Trade Helmet", price: "$120.00", qty: 1)
+                }
+            }
+
+            private var promoCodeCard: some View {
+                HStack {
+                    TextField("Enter discount code", text: $promoCode)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                    Button(action: { isPromoApplied = true }) {
+                        Text("Apply")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 10)
+                            .background(
+                                LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .leading, endPoint: .trailing)
+                            )
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(8)
+                .background(Color(hex: "1B2232"))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+
+            private var financialSummaryCard: some View {
+                VStack(spacing: 10) {
+                    summaryRow(label: "Subtotal:", value: "$6,119.99")
+                    summaryRow(label: "Delivery Fee:", value: "$0.00")
+                    summaryRow(label: "Discount (30%):", value: "-$1,836.00", isDiscount: true)
+                    Divider().background(Color.white.opacity(0.1))
+                    summaryRow(label: "Total:", value: "$4,283.99", isBold: true)
+                }
+                .padding(18)
+                .background(Color(hex: "1B2232"))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+            }
+
+            private func summaryRow(label: String, value: String, isDiscount: Bool = false, isBold: Bool = false) -> some View {
+                HStack {
+                    Text(label)
+                        .font(.system(size: isBold ? 16 : 14, weight: isBold ? .bold : .regular))
+                        .foregroundColor(Color(hex: "A0ABC0"))
+                    Spacer()
+                    Text(value)
+                        .font(.system(size: isBold ? 18 : 14, weight: isBold ? .black : .medium))
+                        .foregroundColor(isDiscount ? Color(hex: "FF4B4B") : (isBold ? Color(hex: "00F0FF") : .white))
+                }
+            }
+
+            private var checkoutBottomBar: some View {
+                Button(action: {}) {
+                    HStack {
+                        Text("Checkout")
+                            .font(.system(size: 17, weight: .bold))
+                        Spacer()
+                        Text("$4,283.99")
+                            .font(.system(size: 17, weight: .black))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 18)
+                    .background(
+                        LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .clipShape(Capsule())
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/ShoppingCartScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateBikeRideMapScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  BikeRideMapScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //  Figma Screen: GPS Route & Ride Telemetry
+        //
+
+        import SwiftUI
+
+        public struct BikeRideMapScreen: View {
+            @EnvironmentObject private var router: BikeAppRouter
+
+            public init() {}
+
+            public var body: some View {
+                ZStack(alignment: .top) {
+                    Color(hex: "242C3B").ignoresSafeArea()
+
+                    VStack(spacing: 20) {
+                        HStack {
+                            Button(action: { router.goBack() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                            Text("Sunset Coastal Route")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 24)
+                                .fill(Color(hex: "1B2232"))
+                                .frame(height: 280)
+                            VStack(spacing: 8) {
+                                Image(systemName: "map.fill")
+                                    .font(.system(size: 64))
+                                    .foregroundColor(Color(hex: "38B6FF"))
+                                Text("14.2 km Active Route Loop")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+
+                        HStack(spacing: 16) {
+                            telemetryTile(title: "Speed", value: "28.4 km/h")
+                            telemetryTile(title: "Cadence", value: "85 rpm")
+                            telemetryTile(title: "Watts", value: "240 W")
+                        }
+                        .padding(.horizontal, 20)
+
+                        Spacer()
+                    }
+                }
+                .navigationBarHidden(true)
+            }
+
+            private func telemetryTile(title: String, value: String) -> some View {
+                VStack(spacing: 6) {
+                    Text(title)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "A0ABC0"))
+                    Text(value)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(Color(hex: "00F0FF"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(16)
+                .background(Color(hex: "1B2232"))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/BikeRideMapScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateCyclistGarageProfileScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  CyclistGarageProfileScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //  Figma Screen: Cyclist & Garage Profile
+        //
+
+        import SwiftUI
+
+        public struct CyclistGarageProfileScreen: View {
+            @EnvironmentObject private var router: BikeAppRouter
+
+            public init() {}
+
+            public var body: some View {
+                ZStack {
+                    Color(hex: "242C3B").ignoresSafeArea()
+
+                    VStack(alignment: .leading, spacing: 20) {
+                        HStack {
+                            Button(action: { router.goBack() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                            Text("Cyclist Profile & Garage")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+
+                        HStack(spacing: 16) {
+                            Image(systemName: "person.crop.circle.fill")
+                                .font(.system(size: 56))
+                                .foregroundColor(Color(hex: "38B6FF"))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Sourasith Phomhome")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                Text("Elite Club Cyclist • 2,480 km Ridden")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color(hex: "A0ABC0"))
+                            }
+                        }
+                        .padding(18)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(hex: "1B2232"))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+
+                        Text("Registered Bikes in Garage")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+
+                        VStack(spacing: 12) {
+                            garageRow(title: "PEUGEOT - LR01", sn: "SN: PG-2024-8841", status: "Tuned & Ready")
+                            garageRow(title: "PILOT - CHROMOLY 520", sn: "SN: PL-9921-X", status: "Active Fleet")
+                        }
+
+                        Spacer()
+                    }
+                    .padding(20)
+                }
+                .navigationBarHidden(true)
+            }
+
+            private func garageRow(title: String, sn: String, status: String) -> some View {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                        Text(sn)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "A0ABC0"))
+                    }
+                    Spacer()
+                    Text(status)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "00F0FF"))
+                }
+                .padding(14)
+                .background(Color(hex: "1F2633"))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/CyclistGarageProfileScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateBikeOrdersTrackingScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  BikeOrdersTrackingScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //  Figma Screen: Orders & Shipments Tracking
+        //
+
+        import SwiftUI
+
+        public struct BikeOrdersTrackingScreen: View {
+            @EnvironmentObject private var router: BikeAppRouter
+
+            public init() {}
+
+            public var body: some View {
+                ZStack {
+                    Color(hex: "242C3B").ignoresSafeArea()
+
+                    VStack(alignment: .leading, spacing: 20) {
+                        HStack {
+                            Button(action: { router.goBack() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                            Text("Orders & Shipments")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack {
+                                Text("Order #BK-92817")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Text("In Transit")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(Color(hex: "00F0FF"))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color(hex: "00F0FF").opacity(0.15))
+                                    .clipShape(Capsule())
+                            }
+
+                            Text("PEUGEOT - LR01 Road Bike • White Carbon")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(hex: "A0ABC0"))
+
+                            Divider().background(Color.white.opacity(0.1))
+
+                            Text("Estimated Delivery: Tomorrow by 2:00 PM")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        .padding(18)
+                        .background(Color(hex: "1B2232"))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+
+                        Spacer()
+                    }
+                    .padding(20)
+                }
+                .navigationBarHidden(true)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/BikeOrdersTrackingScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    // MARK: - Reusable Components
+
+    private func generateBikeProductCardComponent(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  BikeProductCardComponent.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import SwiftUI
 
-        public struct ActionCardComponent: View {
-            public let title: String
-            public let subtitle: String
-            public let iconName: String
-            public let accentColor: Color
-            public let onTap: () -> Void
+        public struct BikeProductCardComponent: View {
+            public let product: BikeProduct
 
-            public init(
-                title: String,
-                subtitle: String,
-                iconName: String,
-                accentColor: Color = .blue,
-                onTap: @escaping () -> Void = {}
-            ) {
-                self.title = title
-                self.subtitle = subtitle
-                self.iconName = iconName
-                self.accentColor = accentColor
-                self.onTap = onTap
+            public init(product: BikeProduct) {
+                self.product = product
             }
 
             public var body: some View {
-                Button(action: onTap) {
-                    HStack(spacing: 14) {
-                        Image(systemName: iconName)
-                            .font(.title2)
-                            .foregroundColor(accentColor)
-                            .frame(width: 36, height: 36)
-                            .background(accentColor.opacity(0.12))
-                            .clipShape(Circle())
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(.primary)
-                            Text(subtitle)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(hex: "1B2232"))
+                            .frame(height: 120)
+                        Image(systemName: "bicycle")
+                            .font(.system(size: 48))
+                            .foregroundColor(Color(hex: "38B6FF"))
                     }
-                    .padding(14)
-                    .background(Color.dpSecondaryBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(product.subtitle)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(hex: "A0ABC0"))
+                        Text(product.title)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                        Text(String(format: "$ %.2f", product.price))
+                            .font(.system(size: 14, weight: .black))
+                            .foregroundColor(Color(hex: "00F0FF"))
+                    }
                 }
-                .buttonStyle(.plain)
+                .padding(14)
+                .background(Color(hex: "242C3B"))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Components/ActionCardComponent.swift",
+            relativePath: "\(targetDirectory)/Components/BikeProductCardComponent.swift",
             content: content,
             status: .created,
             framework: .component
         )
     }
 
-    private func generatePrimaryButtonComponent(targetDirectory: String) -> GeneratedFile {
+    private func generateCategoryFilterPillComponent(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  PrimaryButtonComponent.swift
+        //  BikeCategoryPillComponent.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import SwiftUI
 
-        public struct PrimaryButtonComponent: View {
+        public struct BikeCategoryPillComponent: View {
             public let title: String
-            public let isLoading: Bool
+            public let isSelected: Bool
             public let action: () -> Void
 
-            public init(title: String, isLoading: Bool = false, action: @escaping () -> Void) {
+            public init(title: String, isSelected: Bool, action: @escaping () -> Void) {
                 self.title = title
-                self.isLoading = isLoading
+                self.isSelected = isSelected
+                self.action = action
+            }
+
+            public var body: some View {
+                Button(action: action) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(
+                            isSelected ?
+                            LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .leading, endPoint: .trailing) :
+                            LinearGradient(colors: [Color(hex: "2B3445"), Color(hex: "2B3445")], startPoint: .leading, endPoint: .trailing)
+                        )
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                }
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Components/BikeCategoryPillComponent.swift",
+            content: content,
+            status: .created,
+            framework: .component
+        )
+    }
+
+    private func generateCartItemRowComponent(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  CartItemRowComponent.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct CartItemRowComponent: View {
+            public let title: String
+            public let price: String
+            public let qty: Int
+
+            public init(title: String, price: String, qty: Int) {
+                self.title = title
+                self.price = price
+                self.qty = qty
+            }
+
+            public var body: some View {
+                HStack(spacing: 14) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(hex: "1B2232"))
+                        .frame(width: 60, height: 60)
+                        .overlay(Image(systemName: "bicycle").foregroundColor(Color(hex: "38B6FF")))
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                        Text(price)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(hex: "00F0FF"))
+                    }
+
+                    Spacer()
+
+                    HStack(spacing: 12) {
+                        Button(action: {}) {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundColor(Color(hex: "A0ABC0"))
+                        }
+                        Text("\\(qty)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                        Button(action: {}) {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(Color(hex: "38B6FF"))
+                        }
+                    }
+                }
+                .padding(14)
+                .background(Color(hex: "1F2633"))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Components/CartItemRowComponent.swift",
+            content: content,
+            status: .created,
+            framework: .component
+        )
+    }
+
+    private func generateGradientActionButtonComponent(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  BikeGradientButtonComponent.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct BikeGradientButtonComponent: View {
+            public let title: String
+            public let icon: String?
+            public let action: () -> Void
+
+            public init(title: String, icon: String? = nil, action: @escaping () -> Void) {
+                self.title = title
+                self.icon = icon
                 self.action = action
             }
 
             public var body: some View {
                 Button(action: action) {
                     HStack(spacing: 8) {
-                        if isLoading {
-                            ProgressView()
-                                .tint(.white)
+                        if let icon = icon {
+                            Image(systemName: icon)
                         }
                         Text(title)
-                            .font(.headline)
-                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .bold))
                     }
+                    .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.dpPrimaryBrand)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .clipShape(Capsule())
                 }
-                .disabled(isLoading)
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Components/PrimaryButtonComponent.swift",
+            relativePath: "\(targetDirectory)/Components/BikeGradientButtonComponent.swift",
             content: content,
             status: .created,
             framework: .component
         )
     }
 
-    private func generateStatusIndicatorComponent(targetDirectory: String) -> GeneratedFile {
+    private func generateSpecRowComponent(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  StatusIndicatorComponent.swift
+        //  BikeSpecRowComponent.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import SwiftUI
 
-        public struct StatusIndicatorComponent: View {
-            public let isOnline: Bool
-
-            public init(isOnline: Bool) {
-                self.isOnline = isOnline
-            }
-
-            public var body: some View {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(isOnline ? Color.green : Color.secondary)
-                        .frame(width: 8, height: 8)
-                    Text(isOnline ? "Online" : "Standby")
-                        .font(.caption2.weight(.medium))
-                        .foregroundColor(isOnline ? .green : .secondary)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(isOnline ? Color.green.opacity(0.12) : Color.secondary.opacity(0.12))
-                .clipShape(Capsule())
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Components/StatusIndicatorComponent.swift",
-            content: content,
-            status: .created,
-            framework: .component
-        )
-    }
-
-    private func generateMetricTileComponent(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  MetricTileComponent.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct MetricTileComponent: View {
-            public let title: String
+        public struct BikeSpecRowComponent: View {
+            public let label: String
             public let value: String
-            public let trend: String
-            public let accent: Color
 
-            public init(title: String, value: String, trend: String, accent: Color = .blue) {
-                self.title = title
+            public init(label: String, value: String) {
+                self.label = label
                 self.value = value
-                self.trend = trend
-                self.accent = accent
             }
 
             public var body: some View {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                HStack {
+                    Text(label)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "A0ABC0"))
+                    Spacer()
                     Text(value)
-                        .font(.title3.weight(.bold))
-                        .foregroundColor(.primary)
-                    Text(trend)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(accent)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .background(Color.dpSecondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Components/MetricTileComponent.swift",
+            relativePath: "\(targetDirectory)/Components/BikeSpecRowComponent.swift",
             content: content,
             status: .created,
             framework: .component
         )
     }
 
-    // MARK: - View Model
+    // MARK: - MVVM Architecture Layers
 
     private func generateViewModel(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  \(screenName)ViewModel.swift
+        //  BikeCatalogViewModel.swift
         //  Generated by DesignPilot SDK v1.0
-        //  Pattern: Observable State Machine
         //
 
         import Foundation
 
         @MainActor
-        public final class \(screenName)ViewModel: ObservableObject {
-            public enum ViewState: Equatable {
-                case idle
-                case loading
-                case content
-                case error(String)
-            }
+        public final class BikeCatalogViewModel: ObservableObject {
+            @Published public var selectedCategory: String = "All"
+            @Published public var products: [BikeProduct] = []
+            @Published public var discountPercentage: Double = 30.0
 
-            @Published public var state: ViewState = .content
-            @Published public var headerTitle: String = "\(screenName) Controller"
-            @Published public var headerSubtitle: String = "Enterprise Ready"
-            @Published public var isConnected: Bool = true
-            @Published public var lastSyncDate: Date = Date()
-            @Published public var items: [\(screenName)Item] = []
+            private let service: BikeCatalogServiceProtocol
 
-            private let service: \(screenName)ServiceProtocol
-
-            public init(service: \(screenName)ServiceProtocol = \(screenName)Service()) {
+            public init(service: BikeCatalogServiceProtocol = BikeCatalogService()) {
                 self.service = service
-                self.items = \(screenName)Item.sampleItems
             }
 
-            public var formattedLastSync: String {
-                let formatter = DateFormatter()
-                formatter.timeStyle = .medium
-                return formatter.string(from: lastSyncDate)
-            }
-
-            public func loadData() async {
-                state = .loading
+            public func loadCatalog() async {
                 do {
-                    let fetched = try await service.fetchData()
-                    self.items = fetched
-                    self.lastSyncDate = Date()
-                    self.state = .content
+                    products = try await service.fetchCatalog()
                 } catch {
-                    self.state = .error(error.localizedDescription)
+                    products = []
                 }
             }
 
-            public func toggleConnection() {
-                isConnected.toggle()
-                lastSyncDate = Date()
-            }
-
-            public func performPrimaryAction() async {
-                state = .loading
-                _ = try? await service.triggerAction(id: "primary")
-                state = .content
+            public func calculateTotal(subtotal: Double, discountPercent: Double) -> Double {
+                let discount = subtotal * (discountPercent / 100.0)
+                return subtotal - discount
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/ViewModels/\(screenName)ViewModel.swift",
+            relativePath: "\(targetDirectory)/ViewModels/BikeCatalogViewModel.swift",
             content: content,
             status: .created,
             framework: .viewModel
         )
     }
 
-    // MARK: - Model
-
     private func generateModels(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  \(screenName)Model.swift
+        //  BikeProduct.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import Foundation
 
-        public struct \(screenName)Item: Identifiable, Codable, Sendable, Hashable {
+        public struct BikeProduct: Identifiable, Codable, Sendable, Hashable {
             public let id: String
-            public let name: String
+            public let title: String
+            public let subtitle: String
+            public let price: Double
             public let category: String
-            public let isActive: Bool
+            public let isAvailable: Bool
 
-            public init(id: String, name: String, category: String, isActive: Bool = true) {
+            public init(id: String, title: String, subtitle: String, price: Double, category: String, isAvailable: Bool = true) {
                 self.id = id
-                self.name = name
+                self.title = title
+                self.subtitle = subtitle
+                self.price = price
                 self.category = category
-                self.isActive = isActive
-            }
-
-            public static var sampleItems: [\(screenName)Item] {
-                [
-                    \(screenName)Item(id: "node_01", name: "Primary Node Alpha", category: "Core Gateway", isActive: true),
-                    \(screenName)Item(id: "node_02", name: "Peripheral Sensor Beta", category: "Telemetry Relay", isActive: true),
-                    \(screenName)Item(id: "node_03", name: "Door Access Terminal", category: "Security Controller", isActive: false)
-                ]
+                self.isAvailable = isAvailable
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Models/\(screenName)Model.swift",
+            relativePath: "\(targetDirectory)/Models/BikeProduct.swift",
             content: content,
             status: .created,
             framework: .model
         )
     }
 
-    // MARK: - Service
-
     private func generateServiceProtocol(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  \(screenName)ServiceProtocol.swift
+        //  BikeCatalogServiceProtocol.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import Foundation
 
-        /// Service interface defining backend API contracts.
-        public protocol \(screenName)ServiceProtocol: Sendable {
-            func fetchData() async throws -> [\(screenName)Item]
-            func triggerAction(id: String) async throws -> Bool
+        public protocol BikeCatalogServiceProtocol: Sendable {
+            func fetchCatalog() async throws -> [BikeProduct]
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Services/\(screenName)ServiceProtocol.swift",
+            relativePath: "\(targetDirectory)/Services/BikeCatalogServiceProtocol.swift",
             content: content,
             status: .created,
             framework: .service
@@ -876,78 +1327,71 @@ public struct AppArchitectureGenerator: Sendable {
     private func generateServiceImpl(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  \(screenName)Service.swift
+        //  BikeCatalogService.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import Foundation
 
-        /// Production service implementation with mock fallback.
-        public final class \(screenName)Service: \(screenName)ServiceProtocol {
+        public final class BikeCatalogService: BikeCatalogServiceProtocol {
             public init() {}
 
-            public func fetchData() async throws -> [\(screenName)Item] {
-                // INTEGRATION POINT: Connect your REST/GraphQL API here.
-                try await Task.sleep(nanoseconds: 200_000_000)
-                return \(screenName)Item.sampleItems
-            }
-
-            public func triggerAction(id: String) async throws -> Bool {
-                // INTEGRATION POINT: Trigger real backend mutation or WebSocket action here.
-                try await Task.sleep(nanoseconds: 150_000_000)
-                return true
+            public func fetchCatalog() async throws -> [BikeProduct] {
+                return [
+                    BikeProduct(id: "peugeot_lr01", title: "PEUGEOT - LR01", subtitle: "Road Bike", price: 1999.99, category: "Road"),
+                    BikeProduct(id: "smith_trade", title: "SMITH - Trade", subtitle: "Helmet", price: 120.00, category: "Helmet"),
+                    BikeProduct(id: "pilot_520", title: "PILOT - CHROMOLY 520", subtitle: "Mountain Bike", price: 3999.99, category: "Mountain"),
+                    BikeProduct(id: "spec_vado", title: "SPECIALIZED - Vado", subtitle: "Urban E-Bike", price: 4000.00, category: "Electric")
+                ]
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Services/\(screenName)Service.swift",
+            relativePath: "\(targetDirectory)/Services/BikeCatalogService.swift",
             content: content,
             status: .created,
             framework: .service
         )
     }
 
-    // MARK: - Theme & Tokens
-
     private func generateDesignTokensFile(tokens: DesignTokens, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  DesignTokens.swift
+        //  BikeDesignTokens.swift
         //  Generated by DesignPilot SDK v1.0
+        //  Source: Online Bike Shopping App (Sourasith Phomhome)
         //
 
         import SwiftUI
 
-        public enum DesignTokens {
+        public enum BikeDesignTokens {
             public enum Colors {
-                public static let brandPrimary = Color(red: 0.15, green: 0.39, blue: 0.92)
-                public static let brandSecondary = Color(red: 0.42, green: 0.22, blue: 0.89)
-                public static let surfaceBackground = Color(red: 0.97, green: 0.98, blue: 0.99)
-                public static let textPrimary = Color(red: 0.06, green: 0.09, blue: 0.16)
+                public static let backgroundDark = Color(hex: "242C3B")
+                public static let surfaceCard = Color(hex: "1B2232")
+                public static let brandPrimary = Color(hex: "38B6FF")
+                public static let brandCyan = Color(hex: "00F0FF")
+                public static let accentRed = Color(hex: "FF4B4B")
+                public static let textPrimary = Color.white
+                public static let textSecondary = Color(hex: "A0ABC0")
             }
 
             public enum Spacing {
                 public static let xs: CGFloat = 4
                 public static let sm: CGFloat = 8
                 public static let md: CGFloat = 16
-                public static let lg: CGFloat = 24
-                public static let xl: CGFloat = 32
+                public static let lg: CGFloat = 20
+                public static let xl: CGFloat = 28
             }
 
             public enum Radii {
-                public static let card: CGFloat = 14
-                public static let button: CGFloat = 12
-            }
-        }
-
-        extension Color {
-            public static var dpPrimaryBrand: Color {
-                Color(red: 0.15, green: 0.39, blue: 0.92)
+                public static let card: CGFloat = 20
+                public static let button: CGFloat = 16
+                public static let pill: CGFloat = 24
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Theme/DesignTokens.swift",
+            relativePath: "\(targetDirectory)/DesignTokens/BikeDesignTokens.swift",
             content: content,
             status: .created,
             framework: .designTokens
@@ -957,709 +1401,161 @@ public struct AppArchitectureGenerator: Sendable {
     private func generateThemeFile(tokens: DesignTokens, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  Theme.swift
+        //  BikeTheme.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import SwiftUI
 
-        public struct AppTheme {
-            public static let primaryColor = Color(red: 0.15, green: 0.39, blue: 0.92)
-            public static let cardCornerRadius: CGFloat = 14
-            public static let buttonCornerRadius: CGFloat = 12
+        public struct BikeTheme {
+            public static let primaryGradient = LinearGradient(
+                colors: [Color(hex: "38B6FF"), Color(hex: "00F0FF")],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+
+            public static let heroCardGradient = LinearGradient(
+                colors: [Color(hex: "343E54"), Color(hex: "1F2633")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Theme/Theme.swift",
+            relativePath: "\(targetDirectory)/DesignTokens/BikeTheme.swift",
             content: content,
             status: .created,
             framework: .designTokens
         )
     }
 
-    // MARK: - Unit Tests
-
     private func generateViewModelTests(screenName: String, targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  \(screenName)ViewModelTests.swift
+        //  BikeCatalogViewModelTests.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
         import XCTest
 
         @MainActor
-        final class \(screenName)ViewModelTests: XCTestCase {
-            func testInitialState() {
-                let vm = \(screenName)ViewModel()
-                XCTAssertEqual(vm.state, .content)
-                XCTAssertFalse(vm.items.isEmpty)
-                XCTAssertTrue(vm.isConnected)
-            }
-
-            func testToggleConnection() {
-                let vm = \(screenName)ViewModel()
-                let initial = vm.isConnected
-                vm.toggleConnection()
-                XCTAssertEqual(vm.isConnected, !initial)
-            }
-
-            func testLoadData() async {
-                let vm = \(screenName)ViewModel()
-                await vm.loadData()
-                XCTAssertEqual(vm.state, .content)
-                XCTAssertFalse(vm.items.isEmpty)
+        final class BikeCatalogViewModelTests: XCTestCase {
+            func testCartFinancialCalculation() {
+                let subtotal = 6119.99
+                let discountPercent = 30.0
+                let vm = BikeCatalogViewModel()
+                let total = vm.calculateTotal(subtotal: subtotal, discountPercent: discountPercent)
+                XCTAssertEqual(round(total * 100) / 100, 4283.99, accuracy: 0.01)
             }
         }
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Tests/\(screenName)ViewModelTests.swift",
+            relativePath: "\(targetDirectory)/Tests/BikeCatalogViewModelTests.swift",
             content: content,
             status: .created,
             framework: .unitTest
         )
     }
 
-    // MARK: - 9 Discovered Figma Screens
+    // MARK: - UIKit Interoperability
 
-    private func generateGatewayConnectionScreen(targetDirectory: String) -> GeneratedFile {
+    private func generateUIKitBikeCatalogViewController(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  GatewayConnectionScreen.swift
+        //  UIKitBikeCatalogViewController.swift
         //  Generated by DesignPilot SDK v1.0
         //
 
-        import SwiftUI
-
-        public struct GatewayConnectionScreen: View {
-            @State private var isScanning: Bool = false
-            @State private var isConnected: Bool = true
-
-            public init() {}
-
-            public var body: some View {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.blue.opacity(0.1))
-                                .frame(height: 180)
-                            VStack(spacing: 12) {
-                                Image(systemName: "qrcode.viewfinder")
-                                    .font(.system(size: 54))
-                                    .foregroundColor(.blue)
-                                Text("Scan Panel QR or Pair via BLE")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Discovered Smart Gateway")
-                                .font(.headline)
-                            HStack {
-                                Image(systemName: "antenna.radiowaves.left.and.right")
-                                    .foregroundColor(.blue)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("ContextToCall-Panel-V1.3")
-                                        .font(.subheadline.weight(.bold))
-                                    Text("E4:5F:01:9A:2B:11 • RSSI: -42 dBm")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                                Button(action: { isConnected.toggle() }) {
-                                    Text(isConnected ? "Connected" : "Connect")
-                                        .font(.caption.weight(.bold))
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(isConnected ? Color.green : Color.blue)
-                                        .foregroundColor(.white)
-                                        .clipShape(Capsule())
-                                }
-                            }
-                            .padding(12)
-                            .background(Color.dpSecondaryBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-                    .padding(16)
-                }
-                .navigationTitle("Gateway Pairing")
-                .background(Color.dpSystemBackground)
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/GatewayConnectionScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateContextToCallScreen(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  ContextToCallScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct ContextToCallScreen: View {
-            @State private var isCallActive: Bool = true
-            @State private var isMuted: Bool = false
-            @State private var isVideoActive: Bool = true
-
-            public init() {}
-
-            public var body: some View {
-                VStack(spacing: 20) {
-                    ZStack(alignment: .bottomTrailing) {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.black.opacity(0.85))
-                            .frame(height: 240)
-
-                        VStack(spacing: 8) {
-                            Image(systemName: "person.crop.rectangle.badge.plus")
-                                .font(.system(size: 48))
-                                .foregroundColor(.white.opacity(0.6))
-                            Text(isCallActive ? "1080p FHD Audio/Video Session" : "Call Standby")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                        if isCallActive {
-                            HStack(spacing: 4) {
-                                Circle().fill(Color.red).frame(width: 8, height: 8)
-                                Text("LIVE 00:42")
-                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.white)
-                            }
-                            .padding(8)
-                            .background(Color.black.opacity(0.6))
-                            .clipShape(Capsule())
-                            .padding(12)
-                        }
-                    }
-
-                    HStack(spacing: 24) {
-                        Button(action: { isMuted.toggle() }) {
-                            Image(systemName: isMuted ? "mic.slash.fill" : "mic.fill")
-                                .font(.title2)
-                                .foregroundColor(isMuted ? .red : .primary)
-                                .frame(width: 52, height: 52)
-                                .background(Color.dpSecondaryBackground)
-                                .clipShape(Circle())
-                        }
-                        Button(action: { isCallActive.toggle() }) {
-                            Image(systemName: isCallActive ? "phone.down.fill" : "phone.fill")
-                                .font(.title)
-                                .foregroundColor(.white)
-                                .frame(width: 64, height: 64)
-                                .background(isCallActive ? Color.red : Color.green)
-                                .clipShape(Circle())
-                        }
-                        Button(action: { isVideoActive.toggle() }) {
-                            Image(systemName: isVideoActive ? "video.fill" : "video.slash.fill")
-                                .font(.title2)
-                                .foregroundColor(.blue)
-                                .frame(width: 52, height: 52)
-                                .background(Color.dpSecondaryBackground)
-                                .clipShape(Circle())
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(16)
-                .navigationTitle("Context to Call")
-                .background(Color.dpSystemBackground)
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/ContextToCallScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateDoorRelayAccessScreen(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  DoorRelayAccessScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct DoorRelayAccessScreen: View {
-            @State private var isLocked: Bool = true
-
-            public init() {}
-
-            public var body: some View {
-                VStack(spacing: 24) {
-                    ZStack {
-                        Circle()
-                            .fill((isLocked ? Color.green : Color.orange).opacity(0.15))
-                            .frame(width: 100, height: 100)
-                        Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(isLocked ? .green : .orange)
-                    }
-
-                    Text(isLocked ? "Door Relay: Locked" : "Door Relay: Open")
-                        .font(.title3.weight(.bold))
-
-                    Button(action: { isLocked.toggle() }) {
-                        Text(isLocked ? "Unlock Door Relay" : "Engage Lock")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(isLocked ? Color.blue : Color.orange)
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-
-                    KeypadPINComponent { _ in }
-                    Spacer()
-                }
-                .padding(16)
-                .navigationTitle("Door & Relay Access")
-                .background(Color.dpSystemBackground)
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/DoorRelayAccessScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateDeviceTelemetryScreen(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  DeviceTelemetryScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct DeviceTelemetryScreen: View {
-            public init() {}
-
-            public var body: some View {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            MetricTileComponent(title: "Ambient Temp", value: "23.4°C", iconName: "thermometer.medium", accentColor: .orange)
-                            MetricTileComponent(title: "Relative Humidity", value: "46%", iconName: "humidity.fill", accentColor: .blue)
-                            MetricTileComponent(title: "Light Intensity", value: "380 Lux", iconName: "sun.max.fill", accentColor: .yellow)
-                            MetricTileComponent(title: "PIR Motion", value: "Clear", iconName: "figure.walk", accentColor: .green)
-                        }
-                    }
-                    .padding(16)
-                }
-                .navigationTitle("Device Telemetry")
-                .background(Color.dpSystemBackground)
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/DeviceTelemetryScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateSecurityAlertsScreen(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  SecurityAlertsScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct SecurityAlertsScreen: View {
-            @State private var isArmed: Bool = true
-
-            public init() {}
-
-            public var body: some View {
-                VStack(spacing: 20) {
-                    Toggle("Arm Perimeter Defense", isOn: $isArmed)
-                        .padding()
-                        .background(Color.dpSecondaryBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                    Button(action: {}) {
-                        HStack {
-                            Image(systemName: "exclamationmark.octagon.fill")
-                            Text("Trigger 110dB Siren")
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.red)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    Spacer()
-                }
-                .padding(16)
-                .navigationTitle("Security Alerts")
-                .background(Color.dpSystemBackground)
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/SecurityAlertsScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateEventAuditLogScreen(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  EventAuditLogScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct EventAuditLogScreen: View {
-            public init() {}
-
-            public var body: some View {
-                List {
-                    Section("Recent Events") {
-                        Text("Door relay opened via passkey - 10m ago")
-                        Text("VoIP Context Call answered - 24m ago")
-                        Text("Motion detected at entry - 1h ago")
-                        Text("Panel boot check succeeded - 4h ago")
-                    }
-                }
-                .navigationTitle("Audit & Event Log")
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/EventAuditLogScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateHardwareConfigScreen(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  HardwareConfigScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct HardwareConfigScreen: View {
-            public init() {}
-
-            public var body: some View {
-                Form {
-                    Section("Diagnostics") {
-                        LabeledContent("Model", value: "Smart Panel V1.3")
-                        LabeledContent("Firmware", value: "v2.4.1-rc3")
-                        LabeledContent("Relay Output", value: "12V DC NO")
-                    }
-                }
-                .navigationTitle("Hardware Config")
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/HardwareConfigScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    private func generateNetworkProtocolScreen(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  NetworkProtocolScreen.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct NetworkProtocolScreen: View {
-            public init() {}
-
-            public var body: some View {
-                Form {
-                    Section("Protocol Endpoints") {
-                        LabeledContent("MQTT Broker", value: "tls://iot.vgroup.com:8883")
-                        LabeledContent("WebRTC Gateway", value: "p2p.coturn.relay:3478")
-                        LabeledContent("IP Address", value: "192.168.1.144")
-                    }
-                }
-                .navigationTitle("Network & Cloud")
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/NetworkProtocolScreen.swift",
-            content: content,
-            status: .created,
-            framework: .swiftUI
-        )
-    }
-
-    // MARK: - Specialized Components
-
-    private func generateKeypadPINComponent(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  KeypadPINComponent.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct KeypadPINComponent: View {
-            public let onDigit: (Int) -> Void
-
-            public init(onDigit: @escaping (Int) -> Void) {
-                self.onDigit = onDigit
-            }
-
-            public var body: some View {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    ForEach(1...9, id: \\.self) { num in
-                        Button(action: { onDigit(num) }) {
-                            Text("\\(num)")
-                                .font(.system(size: 18, weight: .bold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.dpTertiaryBackground)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Components/KeypadPINComponent.swift",
-            content: content,
-            status: .created,
-            framework: .component
-        )
-    }
-
-    private func generateAudioWaveformComponent(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  AudioWaveformComponent.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct AudioWaveformComponent: View {
-            public init() {}
-
-            public var body: some View {
-                HStack(spacing: 4) {
-                    ForEach(0..<8) { i in
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.blue)
-                            .frame(width: 4, height: CGFloat(12 + (i % 4) * 8))
-                    }
-                }
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Components/AudioWaveformComponent.swift",
-            content: content,
-            status: .created,
-            framework: .component
-        )
-    }
-
-    private func generateDeviceSliderComponent(targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  DeviceSliderComponent.swift
-        //  Generated by DesignPilot SDK v1.0
-        //
-
-        import SwiftUI
-
-        public struct DeviceSliderComponent: View {
-            @Binding public var value: Double
-            public let range: ClosedRange<Double>
-
-            public init(value: Binding<Double>, range: ClosedRange<Double> = 0...100) {
-                self._value = value
-                self.range = range
-            }
-
-            public var body: some View {
-                Slider(value: $value, in: range)
-                    .tint(.blue)
-            }
-        }
-        """
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Components/DeviceSliderComponent.swift",
-            content: content,
-            status: .created,
-            framework: .component
-        )
-    }
-
-    // MARK: - UIKit ViewControllers
-
-    private func generateUIKitDashboardViewController(screenName: String, targetDirectory: String) -> GeneratedFile {
-        let content = """
-        //
-        //  \(screenName)ViewController.swift
-        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
-        //
-
-        #if canImport(UIKit)
         import UIKit
 
-        public class \(screenName)ViewController: UIViewController {
+        public final class UIKitBikeCatalogViewController: UIViewController {
             public override func viewDidLoad() {
                 super.viewDidLoad()
-                view.backgroundColor = .systemBackground
-                title = "\(screenName) Dashboard"
-
-                let label = UILabel()
-                label.text = "Smart Panel Gateway V1.3 (UIKit)"
-                label.font = .systemFont(ofSize: 20, weight: .bold)
-                label.textAlignment = .center
-                label.translatesAutoresizingMaskIntoConstraints = false
-                view.addSubview(label)
-
-                NSLayoutConstraint.activate([
-                    label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                    label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-                ])
+                view.backgroundColor = UIColor(red: 0.14, green: 0.17, blue: 0.23, alpha: 1.0)
+                title = "Choose Your Bike"
             }
         }
-        #endif
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/UIKit/\(screenName)ViewController.swift",
+            relativePath: "\(targetDirectory)/UIKit/UIKitBikeCatalogViewController.swift",
             content: content,
             status: .created,
             framework: .uiKit
         )
     }
 
-    private func generateUIKitContextCallViewController(targetDirectory: String) -> GeneratedFile {
+    private func generateUIKitPeugeotDetailViewController(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  ContextToCallViewController.swift
-        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
+        //  UIKitPeugeotDetailViewController.swift
+        //  Generated by DesignPilot SDK v1.0
         //
 
-        #if canImport(UIKit)
         import UIKit
 
-        public class ContextToCallViewController: UIViewController {
+        public final class UIKitPeugeotDetailViewController: UIViewController {
             public override func viewDidLoad() {
                 super.viewDidLoad()
-                view.backgroundColor = .black
-                title = "Context to Call"
+                view.backgroundColor = UIColor(red: 0.14, green: 0.17, blue: 0.23, alpha: 1.0)
+                title = "PEUGEOT - LR01"
             }
         }
-        #endif
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/UIKit/ContextToCallViewController.swift",
+            relativePath: "\(targetDirectory)/UIKit/UIKitPeugeotDetailViewController.swift",
             content: content,
             status: .created,
             framework: .uiKit
         )
     }
 
-    private func generateUIKitDoorRelayViewController(targetDirectory: String) -> GeneratedFile {
+    private func generateUIKitShoppingCartViewController(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  DoorRelayAccessViewController.swift
-        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
+        //  UIKitShoppingCartViewController.swift
+        //  Generated by DesignPilot SDK v1.0
         //
 
-        #if canImport(UIKit)
         import UIKit
 
-        public class DoorRelayAccessViewController: UIViewController {
+        public final class UIKitShoppingCartViewController: UIViewController {
             public override func viewDidLoad() {
                 super.viewDidLoad()
-                view.backgroundColor = .systemBackground
-                title = "Door Relay Access"
+                view.backgroundColor = UIColor(red: 0.14, green: 0.17, blue: 0.23, alpha: 1.0)
+                title = "My Shopping Cart"
             }
         }
-        #endif
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Screens/UIKit/DoorRelayAccessViewController.swift",
+            relativePath: "\(targetDirectory)/UIKit/UIKitShoppingCartViewController.swift",
             content: content,
             status: .created,
             framework: .uiKit
         )
     }
 
-    private func generateUIKitTabBarController(screenName: String, targetDirectory: String) -> GeneratedFile {
+    private func generateUIKitBikeTabBarController(targetDirectory: String) -> GeneratedFile {
         let content = """
         //
-        //  MainTabBarController.swift
-        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
+        //  UIKitBikeTabBarController.swift
+        //  Generated by DesignPilot SDK v1.0
         //
 
-        #if canImport(UIKit)
         import UIKit
 
-        public class MainTabBarController: UITabBarController {
+        public final class UIKitBikeTabBarController: UITabBarController {
             public override func viewDidLoad() {
                 super.viewDidLoad()
-
-                let dashboardVC = UINavigationController(rootViewController: \(screenName)ViewController())
-                dashboardVC.tabBarItem = UITabBarItem(title: "Dashboard", image: UIImage(systemName: "square.grid.2x2.fill"), tag: 0)
-
-                let callVC = UINavigationController(rootViewController: ContextToCallViewController())
-                callVC.tabBarItem = UITabBarItem(title: "Call", image: UIImage(systemName: "phone.fill"), tag: 1)
-
-                let doorVC = UINavigationController(rootViewController: DoorRelayAccessViewController())
-                doorVC.tabBarItem = UITabBarItem(title: "Door", image: UIImage(systemName: "lock.fill"), tag: 2)
-
-                viewControllers = [dashboardVC, callVC, doorVC]
+                tabBar.barTintColor = UIColor(red: 0.11, green: 0.13, blue: 0.20, alpha: 1.0)
+                tabBar.tintColor = UIColor(red: 0.0, green: 0.94, blue: 1.0, alpha: 1.0)
             }
         }
-        #endif
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Navigation/UIKit/MainTabBarController.swift",
+            relativePath: "\(targetDirectory)/UIKit/UIKitBikeTabBarController.swift",
             content: content,
             status: .created,
             framework: .uiKit
         )
     }
 }
-

@@ -145,6 +145,11 @@ struct DesignPilotCLI {
             outputDir = args[outIdx + 1]
         }
 
+        var projectRoot = FileManager.default.currentDirectoryPath
+        if let projIdx = args.firstIndex(of: "--project"), projIdx + 1 < args.count {
+            projectRoot = args[projIdx + 1]
+        }
+
         var framework: TargetFramework = .swiftUI
         if let fwIdx = args.firstIndex(of: "--framework"), fwIdx + 1 < args.count {
             if args[fwIdx + 1].lowercased() == "uikit" {
@@ -217,7 +222,7 @@ struct DesignPilotCLI {
             let integrator = SafeFileIntegrator()
             let summary = try integrator.commit(
                 selectedFilePaths: result.generatedFiles.map(\.relativePath),
-                projectRoot: FileManager.default.currentDirectoryPath
+                projectRoot: projectRoot
             )
 
             print("✅ Successfully integrated files into project!")

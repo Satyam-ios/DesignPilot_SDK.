@@ -235,8 +235,8 @@ public final class DesignPilotViewModel: ObservableObject {
                 self.state = .readyForReview(result)
                 self.currentStage = .readyForReview
                 self.progressValue = 1.0
-                self.statusMessage = "Generated \(result.generatedFiles.count) files with \(result.visualDiff.similarityPercentageFormatted) visual match."
-                self.isReviewPresented = true
+                self.statusMessage = "Application generated and running with \(result.visualDiff.similarityPercentageFormatted) visual match."
+                self.isReviewPresented = false
             } catch let err as DesignPilotError {
                 self.state = .failed(err, retryStage: self.currentStage)
                 self.statusMessage = err.localizedDescription

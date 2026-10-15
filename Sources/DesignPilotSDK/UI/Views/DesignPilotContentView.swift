@@ -10,16 +10,23 @@ public struct DesignPilotContentView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                headerBar
-                designSourceInputCard
-                actionButtonsSection
-                statusAndProgressSection
+        Group {
+            if case .readyForReview(let result) = viewModel.state {
+                LiveGeneratedAppView(
+                    result: result,
+                    onBackToGenerator: { viewModel.reset() },
+                    onInspectArchitecture: { viewModel.isReviewPresented = true }
+                )
+            } else if case .completed = viewModel.state, let result = viewModel.lastResult {
+                LiveGeneratedAppView(
+                    result: result,
+                    onBackToGenerator: { viewModel.reset() },
+                    onInspectArchitecture: { viewModel.isReviewPresented = true }
+                )
+            } else {
+                generatorFormView
             }
-            .padding(16)
         }
-        .background(Color.dpSystemBackground)
         .fileImporter(
             isPresented: $viewModel.isFileImporterPresented,
             allowedContentTypes: [.pdf],
@@ -47,6 +54,19 @@ public struct DesignPilotContentView: View {
         .task {
             await viewModel.refreshEngineHealth()
         }
+    }
+
+    private var generatorFormView: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                headerBar
+                designSourceInputCard
+                actionButtonsSection
+                statusAndProgressSection
+            }
+            .padding(16)
+        }
+        .background(Color.dpSystemBackground)
     }
 
     private var headerBar: some View {

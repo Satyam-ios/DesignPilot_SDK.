@@ -3,6 +3,8 @@ import Foundation
 /// Structured domain errors for DesignPilot SDK and Engine.
 public enum DesignPilotError: LocalizedError, Sendable, Codable, Hashable {
     case invalidURL(String)
+    case invalidPDF(String)
+    case pdfPageNotFound(page: Int, totalPages: Int)
     case missingCredentials(service: String)
     case figmaAccessDenied(reason: String)
     case rateLimited(retryAfterSeconds: Int)
@@ -22,6 +24,10 @@ public enum DesignPilotError: LocalizedError, Sendable, Codable, Hashable {
         switch self {
         case .invalidURL(let msg):
             return "Invalid Figma URL: \(msg)"
+        case .invalidPDF(let msg):
+            return "Invalid PDF Design File: \(msg)"
+        case .pdfPageNotFound(let page, let total):
+            return "Requested page \(page) is outside PDF range (total pages: \(total))."
         case .missingCredentials(let service):
             return "Missing credentials for \(service). Please set your Figma Personal Access Token or AI API key."
         case .figmaAccessDenied(let reason):
@@ -29,7 +35,7 @@ public enum DesignPilotError: LocalizedError, Sendable, Codable, Hashable {
         case .rateLimited(let secs):
             return "Rate limited by upstream API (429). Please retry in \(secs) seconds."
         case .unsupportedDesignElements(let elements):
-            return "Found unsupported Figma node types: \(elements.joined(separator: ", "))."
+            return "Found unsupported design elements: \(elements.joined(separator: ", "))."
         case .missingAssets(let assets):
             return "Missing required visual assets: \(assets.joined(separator: ", "))."
         case .projectInspectionFailed(let reason):
@@ -57,6 +63,10 @@ public enum DesignPilotError: LocalizedError, Sendable, Codable, Hashable {
         switch self {
         case .invalidURL:
             return "Paste a complete Figma URL, such as https://www.figma.com/design/:fileKey/:title?node-id=0:1."
+        case .invalidPDF:
+            return "Ensure the file exists, is readable, and is a valid PDF export."
+        case .pdfPageNotFound:
+            return "Select a valid page number within the PDF document."
         case .missingCredentials:
             return "Configure your Figma Personal Access Token in Settings or set FIGMA_ACCESS_TOKEN in your environment."
         case .figmaAccessDenied:

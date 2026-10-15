@@ -3,8 +3,8 @@ import Foundation
 /// The discrete stages in the Figma-to-Xcode generation pipeline.
 public enum PipelineStage: String, Codable, Sendable, CaseIterable, Identifiable {
     case idle = "Idle"
-    case validatingURL = "Validating URL & Access"
-    case fetchingDesign = "Retrieving Figma Nodes & Tokens"
+    case validatingURL = "Validating Source & Access"
+    case fetchingDesign = "Retrieving Design Hierarchy & Tokens"
     case inspectingProject = "Inspecting Xcode Project Target"
     case synthesizingCode = "Synthesizing Adaptive Native Code"
     case visualValidation = "Visual Validation & Diff Analysis"
@@ -35,9 +35,9 @@ public enum PipelineStage: String, Codable, Sendable, CaseIterable, Identifiable
         case .idle:
             return "Ready to generate"
         case .validatingURL:
-            return "Checking URL format and Figma permissions..."
+            return "Checking URL format or verifying PDF document structure..."
         case .fetchingDesign:
-            return "Parsing AutoLayout tree, styles, and image assets..."
+            return "Parsing AutoLayout tree or PDF vector elements, styles, and assets..."
         case .inspectingProject:
             return "Determining Swift target, deployment version, and folder layout..."
         case .synthesizingCode:
@@ -58,6 +58,7 @@ public enum PipelineStage: String, Codable, Sendable, CaseIterable, Identifiable
 public enum GenerationState: Equatable, Sendable {
     case idle
     case saved(FigmaURL)
+    case savedSource(DesignSource)
     case inProgress(stage: PipelineStage, progress: Double, message: String)
     case readyForReview(GenerationResult)
     case integrating(progress: Double)
@@ -68,6 +69,7 @@ public enum GenerationState: Equatable, Sendable {
         switch (lhs, rhs) {
         case (.idle, .idle): return true
         case (.saved(let l), .saved(let r)): return l == r
+        case (.savedSource(let l), .savedSource(let r)): return l == r
         case (.inProgress(let s1, let p1, let m1), .inProgress(let s2, let p2, let m2)):
             return s1 == s2 && abs(p1 - p2) < 0.001 && m1 == m2
         case (.readyForReview(let l), .readyForReview(let r)): return l.id == r.id
@@ -83,12 +85,38 @@ public enum GenerationState: Equatable, Sendable {
 /// Result of a successful code generation and visual validation run.
 public struct GenerationResult: Identifiable, Codable, Sendable, Hashable {
     public let id: UUID
-    public let figmaURL: FigmaURL
+    public let source: DesignSource
     public let generatedFiles: [GeneratedFile]
     public let tokens: DesignTokens
     public let visualDiff: VisualDiffReport
     public let screenName: String
     public let timestamp: Date
+
+    public var figmaURL: FigmaURL? {
+        source.figmaURL
+    }
+
+    public var pdfInfo: PDFSourceInfo? {
+        source.pdfInfo
+    }
+
+    public init(
+        id: UUID = UUID(),
+        source: DesignSource,
+        generatedFiles: [GeneratedFile],
+        tokens: DesignTokens,
+        visualDiff: VisualDiffReport,
+        screenName: String,
+        timestamp: Date = Date()
+    ) {
+        self.id = id
+        self.source = source
+        self.generatedFiles = generatedFiles
+        self.tokens = tokens
+        self.visualDiff = visualDiff
+        self.screenName = screenName
+        self.timestamp = timestamp
+    }
 
     public init(
         id: UUID = UUID(),
@@ -99,13 +127,15 @@ public struct GenerationResult: Identifiable, Codable, Sendable, Hashable {
         screenName: String,
         timestamp: Date = Date()
     ) {
-        self.id = id
-        self.figmaURL = figmaURL
-        self.generatedFiles = generatedFiles
-        self.tokens = tokens
-        self.visualDiff = visualDiff
-        self.screenName = screenName
-        self.timestamp = timestamp
+        self.init(
+            id: id,
+            source: .figmaURL(figmaURL),
+            generatedFiles: generatedFiles,
+            tokens: tokens,
+            visualDiff: visualDiff,
+            screenName: screenName,
+            timestamp: timestamp
+        )
     }
 }
 

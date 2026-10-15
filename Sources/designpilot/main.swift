@@ -2,7 +2,6 @@ import Foundation
 import DesignPilotSDK
 import DesignPilotEngine
 
-@main
 struct DesignPilotCLI {
     static func main() async {
         let args = CommandLine.arguments
@@ -35,7 +34,7 @@ struct DesignPilotCLI {
 
     static func printHelp() {
         print("""
-        DesignPilot CLI — AI-Powered Figma-to-Xcode UI Generator
+        DesignPilot CLI — AI-Powered Figma & PDF-to-Xcode UI Generator
         Version \(DesignPilotSDK.version)
 
         USAGE:
@@ -44,14 +43,21 @@ struct DesignPilotCLI {
         SUBCOMMANDS:
             daemon       Launch local HTTP engine daemon for Xcode & iOS Simulator (default port 8088)
             inspect      Inspect target Xcode project (architecture, deployment target, Swift version)
-            generate     Run end-to-end Figma-to-Code generation directly from CLI
+            generate     Run end-to-end design-to-code generation (Figma URL or PDF)
             rollback     Restore project to a previous snapshot backup
 
         EXAMPLES:
-            designpilot daemon --port 8088
-            designpilot inspect --path .
+            # Generate from Figma URL
             designpilot generate "https://www.figma.com/design/KEY/Title?node-id=0:1" --output Views/Generated
-            designpilot rollback --backup-id backup_1710000000
+
+            # Generate from PDF design flow export
+            designpilot generate --pdf "Designs/ContextToCall_IoT_Flow.pdf" --page 1 --output Views/Generated
+
+            # Inspect target project
+            designpilot inspect --path .
+
+            # Start local background engine daemon
+            designpilot daemon --port 8088
         """)
     }
 
@@ -106,8 +112,31 @@ struct DesignPilotCLI {
     }
 
     static func runGenerate(args: [String]) async {
-        guard let urlString = args.first, !urlString.hasPrefix("--") else {
-            print("Error: Missing Figma URL. Usage: designpilot generate <url> [--output <path>]")
+        var pdfPath: String?
+        var figmaUrlString: String?
+        var pageNumber: Int = 1
+
+        if let pdfIdx = args.firstIndex(of: "--pdf"), pdfIdx + 1 < args.count {
+            pdfPath = args[pdfIdx + 1]
+        }
+        if let pageIdx = args.firstIndex(of: "--page"), pageIdx + 1 < args.count {
+            pageNumber = Int(args[pageIdx + 1]) ?? 1
+        }
+
+        if pdfPath == nil {
+            if let firstArg = args.first, !firstArg.hasPrefix("--") {
+                if firstArg.lowercased().hasSuffix(".pdf") {
+                    pdfPath = firstArg
+                } else {
+                    figmaUrlString = firstArg
+                }
+            }
+        }
+
+        guard pdfPath != nil || figmaUrlString != nil else {
+            print("Error: Missing Figma URL or PDF path. Usage:")
+            print("  designpilot generate <figma-url> [--output <path>]")
+            print("  designpilot generate --pdf <path-to-pdf> [--page <number>] [--output <path>]")
             return
         }
 
@@ -124,22 +153,49 @@ struct DesignPilotCLI {
         }
 
         do {
-            print("⚡ Parsing Figma URL: \(urlString)...")
-            let figmaURL = try FigmaURL.parse(urlString)
+            let request: GenerationRequest
+            if let pdf = pdfPath {
+                print("📄 Loading design from PDF: \(pdf) (Page \(pageNumber))...")
+                let fileURL = URL(fileURLWithPath: pdf)
+                let fileName = fileURL.lastPathComponent
+                let fileData = try? Data(contentsOf: fileURL)
+                let fileSize = fileData?.count ?? 0
+
+                let pdfInfo = PDFSourceInfo(
+                    filePath: pdf,
+                    fileName: fileName,
+                    pageCount: 1,
+                    selectedPage: pageNumber,
+                    fileSizeInBytes: fileSize,
+                    fileData: fileData
+                )
+                request = GenerationRequest(
+                    source: .pdf(pdfInfo),
+                    preferredFramework: framework,
+                    targetDirectory: outputDir,
+                    visualAcceptanceThreshold: 0.95,
+                    maxVisualIterations: 3
+                )
+            } else if let urlStr = figmaUrlString {
+                print("⚡ Parsing Figma URL: \(urlStr)...")
+                let figmaURL = try FigmaURL.parse(urlStr)
+                request = GenerationRequest(
+                    figmaURL: figmaURL,
+                    preferredFramework: framework,
+                    targetDirectory: outputDir,
+                    visualAcceptanceThreshold: 0.95,
+                    maxVisualIterations: 3
+                )
+            } else {
+                return
+            }
 
             print("📦 Connecting to Generation Engine...")
-            let request = GenerationRequest(
-                figmaURL: figmaURL,
-                preferredFramework: framework,
-                targetDirectory: outputDir,
-                visualAcceptanceThreshold: 0.95,
-                maxVisualIterations: 3
-            )
-
             let server = EngineServer()
             let result = try await server.executeGeneration(request: request)
 
             print("\n✨ Generation Complete for Screen: '\(result.screenName)'")
+            print("   Source: \(result.source.displayName)")
             print("   Visual Match: \(result.visualDiff.similarityPercentageFormatted)")
             print("   Generated Files (\(result.generatedFiles.count)):")
             for file in result.generatedFiles {
@@ -180,3 +236,5 @@ struct DesignPilotCLI {
         }
     }
 }
+
+await DesignPilotCLI.main()

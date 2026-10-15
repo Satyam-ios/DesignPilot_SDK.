@@ -39,9 +39,11 @@ struct ContentView: View {
 ```
 
 The ready-made [`DesignPilotView`](Sources/DesignPilotSDK/Public/DesignPilotView.swift) provides:
-* **Figma URL Input Field** with clipboard paste support and live format validation.
-* **Distinct Save URL & Generate UI actions**: Saving URL is completely decoupled from initiating the generation pipeline.
-* **Pipeline Progress Tracker**: Real-time multi-step progress indicator (`Validating` ➔ `Figma Fetch` ➔ `Xcode Project Inspection` ➔ `Adaptive Code Synthesis` ➔ `Visual Validation` ➔ `Ready for Review`).
+* **Dual Design Input Modes**:
+  1. **Figma URL**: Direct link to any Figma file/frame with clipboard paste support and live format validation.
+  2. **PDF Upload**: Select/upload any exported design flow PDF (e.g. `Context to Call - IoT Device (Figma Flow) V1.3.pdf`) or provide a local PDF path with interactive page preview and multi-page selector.
+* **Distinct Save Source & Generate UI actions**: Saving a design source (URL or PDF) is completely decoupled from initiating the generation pipeline.
+* **Pipeline Progress Tracker**: Real-time multi-step progress indicator (`Validating` ➔ `Design Extraction` ➔ `Xcode Project Inspection` ➔ `Adaptive Code Synthesis` ➔ `Visual Validation` ➔ `Ready for Review`).
 * **Visual Accuracy Comparator**: Side-by-side reference canvas vs simulator snapshot, visual discrepancy reporting (spacing, typography, color), and similarity score (e.g., `98.4%`).
 * **Staged Code Diff Viewer**: Syntax-highlighted view code, line numbering, one-click copy, and file checklist.
 * **Non-Destructive Integration & Rollback**: Creates an atomic snapshot backup before writing any file to your Xcode project.
@@ -109,14 +111,15 @@ flowchart TD
 ## 3. Developer Workflow
 
 ```
-1. Paste URL       ➔ User inputs https://www.figma.com/design/:key/:title?node-id=...
-2. Save URL        ➔ Validates format and checks token permissions without generating.
-3. Tap Generate    ➔ Triggers the multi-step background engine pipeline.
-4. Auto Inspection ➔ Engine queries Xcode project targets and available simulators.
-5. Code Synthesis  ➔ AutoLayout AST compiler produces adaptive, responsive SwiftUI code.
-6. Visual Validate ➔ Calculates pixel diff and structural similarity (SSIM).
-7. Review & Diff   ➔ Developer inspects code, tokens, and visual comparison in modal sheet.
-8. Safe Commit     ➔ Atomic snapshot created; files written to project; one-click rollback ready.
+1. Select Mode       ➔ Choose between 'Figma URL' or 'PDF Upload'
+2. Provide Source    ➔ Paste Figma URL OR browse/select a design PDF (e.g. IoT Flow export)
+3. Save Source       ➔ Validates format/structure and caches configuration without generating.
+4. Tap Generate      ➔ Triggers the multi-step background engine pipeline.
+5. Auto Inspection   ➔ Engine queries Xcode project targets and available simulators.
+6. Code Synthesis    ➔ AutoLayout / Vector AST compiler produces adaptive, responsive SwiftUI code.
+7. Visual Validate   ➔ Renders 2x reference frame and calculates structural similarity (SSIM).
+8. Review & Diff     ➔ Developer inspects code, tokens, and visual comparison in modal sheet.
+9. Safe Commit       ➔ Atomic snapshot created; files written to project; one-click rollback ready.
 ```
 
 ---
@@ -132,13 +135,16 @@ designpilot daemon --port 8088
 # 2. Inspect target Xcode project
 designpilot inspect --path .
 
-# 3. Generate SwiftUI screen directly from CLI
+# 3. Generate SwiftUI screen from Figma URL
 designpilot generate "https://www.figma.com/design/KEY/ScreenTitle?node-id=0:1" --output Views/Generated
 
-# 4. Generate native UIKit ViewController
+# 4. Generate SwiftUI screen from exported PDF Flow
+designpilot generate --pdf "Designs/ContextToCall_IoT_Flow.pdf" --page 1 --output Views/Generated
+
+# 5. Generate native UIKit ViewController
 designpilot generate "https://www.figma.com/design/KEY/ScreenTitle?node-id=0:1" --framework uikit --output Views/Generated
 
-# 5. Rollback to any previous snapshot
+# 6. Rollback to any previous snapshot
 designpilot rollback --backup-id backup_1791990751
 ```
 
@@ -164,7 +170,8 @@ swift test
 
 Test coverage includes:
 - [x] **`FigmaURLTests`**: Design and File URL formats, query parameters, dash/colon node ID normalization, error detection.
+- [x] **`PDFDesignParserTests`**: PDFKit vector & layout parser, multi-page bounds extraction, token extraction, corrupted file and out-of-bounds page handling.
 - [x] **`AutoLayoutTranspilerTests`**: AutoLayout AST parsing, token extraction (colors, fonts, radii, shadows), SwiftUI generation, UIKit generation.
 - [x] **`SafeFileIntegratorTests`**: Isolated staging, destination conflict detection, atomic snapshot creation, rollback restoration.
 - [x] **`VisualValidationTests`**: Similarity percentage calculation, discrepancy classification, acceptance threshold checking.
-- [x] **`ViewModelTests`**: State machine transitions, Save URL isolation, end-to-end generation, file integration.
+- [x] **`ViewModelTests`**: State machine transitions, Save URL & Save PDF isolation, end-to-end generation for both modes, file integration.

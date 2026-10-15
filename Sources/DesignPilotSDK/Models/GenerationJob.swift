@@ -1,8 +1,8 @@
 import Foundation
 
-/// Request payload describing a generation task.
+/// Request payload describing a generation task for Figma URLs or PDF files.
 public struct GenerationRequest: Codable, Sendable {
-    public let figmaURL: FigmaURL
+    public let source: DesignSource
     public let preferredFramework: TargetFramework
     public let targetDirectory: String
     public let visualAcceptanceThreshold: Double
@@ -10,6 +10,33 @@ public struct GenerationRequest: Codable, Sendable {
     public let extractDesignTokens: Bool
     public let generatePreviews: Bool
 
+    public var figmaURL: FigmaURL? {
+        source.figmaURL
+    }
+
+    public var pdfInfo: PDFSourceInfo? {
+        source.pdfInfo
+    }
+
+    public init(
+        source: DesignSource,
+        preferredFramework: TargetFramework = .swiftUI,
+        targetDirectory: String = "Views/Generated",
+        visualAcceptanceThreshold: Double = 0.95,
+        maxVisualIterations: Int = 3,
+        extractDesignTokens: Bool = true,
+        generatePreviews: Bool = true
+    ) {
+        self.source = source
+        self.preferredFramework = preferredFramework
+        self.targetDirectory = targetDirectory
+        self.visualAcceptanceThreshold = visualAcceptanceThreshold
+        self.maxVisualIterations = maxVisualIterations
+        self.extractDesignTokens = extractDesignTokens
+        self.generatePreviews = generatePreviews
+    }
+
+    /// Convenience initializer maintaining backwards-compatibility for direct Figma URLs.
     public init(
         figmaURL: FigmaURL,
         preferredFramework: TargetFramework = .swiftUI,
@@ -19,13 +46,15 @@ public struct GenerationRequest: Codable, Sendable {
         extractDesignTokens: Bool = true,
         generatePreviews: Bool = true
     ) {
-        self.figmaURL = figmaURL
-        self.preferredFramework = preferredFramework
-        self.targetDirectory = targetDirectory
-        self.visualAcceptanceThreshold = visualAcceptanceThreshold
-        self.maxVisualIterations = maxVisualIterations
-        self.extractDesignTokens = extractDesignTokens
-        self.generatePreviews = generatePreviews
+        self.init(
+            source: .figmaURL(figmaURL),
+            preferredFramework: preferredFramework,
+            targetDirectory: targetDirectory,
+            visualAcceptanceThreshold: visualAcceptanceThreshold,
+            maxVisualIterations: maxVisualIterations,
+            extractDesignTokens: extractDesignTokens,
+            generatePreviews: generatePreviews
+        )
     }
 }
 

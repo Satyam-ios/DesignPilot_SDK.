@@ -1,6 +1,7 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// Main container view rendering the DesignPilot developer interface.
+/// Main container view rendering the DesignPilot developer interface supporting both Figma URLs and PDF designs.
 public struct DesignPilotContentView: View {
     @ObservedObject public var viewModel: DesignPilotViewModel
 
@@ -12,13 +13,27 @@ public struct DesignPilotContentView: View {
         ScrollView {
             VStack(spacing: 20) {
                 headerBar
-                urlInputCard
+                designSourceInputCard
                 actionButtonsSection
                 statusAndProgressSection
             }
             .padding(16)
         }
         .background(Color.dpSystemBackground)
+        .fileImporter(
+            isPresented: $viewModel.isFileImporterPresented,
+            allowedContentTypes: [.pdf],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    viewModel.handleFileImportResult(.success(url))
+                }
+            case .failure(let error):
+                viewModel.handleFileImportResult(.failure(error))
+            }
+        }
         .sheet(isPresented: $viewModel.isSettingsPresented) {
             SettingsSheet(viewModel: viewModel)
         }
@@ -63,7 +78,7 @@ public struct DesignPilotContentView: View {
                         .foregroundColor(.blue)
                         .clipShape(Capsule())
                 }
-                Text("AI-Powered Figma-to-Xcode UI Generator")
+                Text("AI-Powered Figma & PDF to Xcode UI Generator")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -82,7 +97,39 @@ public struct DesignPilotContentView: View {
         }
     }
 
-    private var urlInputCard: some View {
+    private var designSourceInputCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Segmented Mode Switcher: Figma URL vs PDF Upload
+            Picker("Source Mode", selection: $viewModel.inputMode) {
+                ForEach(DesignInputMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if viewModel.inputMode == .figmaURL {
+                figmaURLInputSection
+            } else {
+                pdfUploadInputSection
+            }
+
+            if let errorMsg = viewModel.validationError {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .foregroundColor(.red)
+                        .font(.system(size: 12))
+                    Text(errorMsg)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.dpSecondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var figmaURLInputSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Figma Design URL")
@@ -93,7 +140,7 @@ public struct DesignPilotContentView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
                             .font(.system(size: 11))
-                        Text("Saved (Key: \(String(saved.fileKey.prefix(6)))...)")
+                        Text("Saved (\(String(saved.fileKey.prefix(6)))...)")
                             .font(.caption2.weight(.medium))
                             .foregroundColor(.secondary)
                     }
@@ -143,30 +190,154 @@ public struct DesignPilotContentView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(viewModel.validationError != nil ? Color.red : Color.secondary.opacity(0.2), lineWidth: 1)
             )
+        }
+    }
 
-            if let errorMsg = viewModel.validationError {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundColor(.red)
-                        .font(.system(size: 12))
-                    Text(errorMsg)
-                        .font(.caption)
-                        .foregroundColor(.red)
+    private var pdfUploadInputSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Design PDF Document")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if let info = viewModel.selectedPDFInfo {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.system(size: 11))
+                        Text("Loaded (\(info.pageCount) pgs)")
+                            .font(.caption2.weight(.medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            if let info = viewModel.selectedPDFInfo {
+                // PDF Document Details Card
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.red.opacity(0.15))
+                            .frame(width: 40, height: 44)
+                        Image(systemName: "doc.richtext.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.red)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(info.fileName)
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                        HStack(spacing: 6) {
+                            Text("\(info.pageCount) Page(s)")
+                            Text("•")
+                            Text(info.formattedFileSize)
+                        }
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button(action: {
+                        viewModel.selectedPDFInfo = nil
+                        viewModel.pdfFilePathInput = ""
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(10)
+                .background(Color.dpTertiaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                // Page Selector if multi-page
+                if info.pageCount > 1 {
+                    HStack {
+                        Text("Target Screen Page:")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Picker("Page", selection: Binding(
+                            get: { info.selectedPage },
+                            set: { viewModel.selectPDFPage($0) }
+                        )) {
+                            ForEach(1...info.pageCount, id: \.self) { p in
+                                Text("Page \(p)").tag(p)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+                }
+            } else {
+                // Browse Button & File Path Field
+                VStack(spacing: 8) {
+                    Button(action: { viewModel.isFileImporterPresented = true }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "doc.badge.plus")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Upload / Browse Design PDF...")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "folder")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 13))
+
+                        TextField("Or enter local file path (/path/to/flow.pdf)", text: $viewModel.pdfFilePathInput)
+                            .font(.system(size: 12, design: .monospaced))
+                            .autocorrectionDisabled()
+                            #if os(iOS)
+                            .textInputAutocapitalization(.never)
+                            #endif
+
+                        if !viewModel.pdfFilePathInput.isEmpty {
+                            Button(action: { viewModel.savePDFSource() }) {
+                                Text("Load")
+                                    .font(.caption.weight(.bold))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.15))
+                                    .foregroundColor(.blue)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(8)
+                    .background(Color.dpTertiaryBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
         }
-        .padding(16)
-        .background(Color.dpSecondaryBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var actionButtonsSection: some View {
         HStack(spacing: 12) {
-            // Save URL Button (saves without generating)
-            Button(action: { viewModel.saveURL() }) {
+            // Save Source Button
+            Button(action: {
+                if viewModel.inputMode == .figmaURL {
+                    viewModel.saveURL()
+                } else {
+                    viewModel.savePDFSource()
+                }
+            }) {
                 HStack(spacing: 6) {
                     Image(systemName: "bookmark.fill")
-                    Text("Save URL")
+                    Text(viewModel.inputMode == .figmaURL ? "Save URL" : "Save PDF")
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -182,7 +353,7 @@ public struct DesignPilotContentView: View {
             .buttonStyle(.plain)
             .disabled(isWorking)
 
-            // Generate UI Button (starts full pipeline)
+            // Generate UI Button
             Button(action: { viewModel.generateUI() }) {
                 HStack(spacing: 6) {
                     if isWorking {
@@ -209,7 +380,15 @@ public struct DesignPilotContentView: View {
                 .shadow(color: Color.blue.opacity(0.3), radius: 6, x: 0, y: 3)
             }
             .buttonStyle(.plain)
-            .disabled(isWorking || viewModel.urlInput.isEmpty)
+            .disabled(isWorking || isGenerateDisabled)
+        }
+    }
+
+    private var isGenerateDisabled: Bool {
+        if viewModel.inputMode == .figmaURL {
+            return viewModel.urlInput.isEmpty
+        } else {
+            return viewModel.selectedPDFInfo == nil && viewModel.pdfFilePathInput.isEmpty
         }
     }
 
@@ -218,7 +397,7 @@ public struct DesignPilotContentView: View {
         switch viewModel.state {
         case .idle:
             engineStatusSnippet
-        case .saved:
+        case .saved, .savedSource:
             savedNoticeSnippet
         case .inProgress(let stage, let progress, let message):
             PipelineProgressView(currentStage: stage, progress: progress, message: message)
@@ -238,7 +417,7 @@ public struct DesignPilotContentView: View {
             Image(systemName: "info.circle")
                 .foregroundColor(.secondary)
             if let health = viewModel.engineHealth {
-                Text(health.isAlive ? "Engine ready. Paste any Figma URL above to start." : "Demo Mode active. Ready to generate UI preview.")
+                Text(health.isAlive ? "Engine ready. Paste Figma URL or upload PDF above to start." : "Demo Mode active. Ready to generate UI preview.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             } else {
@@ -256,7 +435,7 @@ public struct DesignPilotContentView: View {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundColor(.green)
             VStack(alignment: .leading, spacing: 2) {
-                Text("URL Saved Successfully")
+                Text("Design Source Saved Successfully")
                     .font(.subheadline.weight(.semibold))
                 Text(viewModel.statusMessage)
                     .font(.caption)

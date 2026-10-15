@@ -27,10 +27,27 @@ public struct AppArchitectureGenerator: Sendable {
         let screenFile = generateMainScreen(screenName: cleanName, targetDirectory: targetDirectory, tokens: tokens)
         let detailFile = generateDetailScreen(screenName: cleanName, targetDirectory: targetDirectory)
         let settingsFile = generateSettingsScreen(screenName: cleanName, targetDirectory: targetDirectory)
+
+        // All 9 Discovered Screens from Figma Flow V1.3
+        let pairingFile = generateGatewayConnectionScreen(targetDirectory: targetDirectory)
+        let contextCallFile = generateContextToCallScreen(targetDirectory: targetDirectory)
+        let doorRelayFile = generateDoorRelayAccessScreen(targetDirectory: targetDirectory)
+        let telemetryFile = generateDeviceTelemetryScreen(targetDirectory: targetDirectory)
+        let securityFile = generateSecurityAlertsScreen(targetDirectory: targetDirectory)
+        let auditLogFile = generateEventAuditLogScreen(targetDirectory: targetDirectory)
+        let hardwareFile = generateHardwareConfigScreen(targetDirectory: targetDirectory)
+        let networkFile = generateNetworkProtocolScreen(targetDirectory: targetDirectory)
+
+        // Reusable Components
         let actionCardFile = generateActionCardComponent(targetDirectory: targetDirectory)
         let buttonFile = generatePrimaryButtonComponent(targetDirectory: targetDirectory)
         let statusPillFile = generateStatusIndicatorComponent(targetDirectory: targetDirectory)
         let metricTileFile = generateMetricTileComponent(targetDirectory: targetDirectory)
+        let keypadFile = generateKeypadPINComponent(targetDirectory: targetDirectory)
+        let waveformFile = generateAudioWaveformComponent(targetDirectory: targetDirectory)
+        let sliderFile = generateDeviceSliderComponent(targetDirectory: targetDirectory)
+
+        // Architecture Layers
         let viewModelFile = generateViewModel(screenName: cleanName, targetDirectory: targetDirectory)
         let modelFile = generateModels(screenName: cleanName, targetDirectory: targetDirectory)
         let serviceProtoFile = generateServiceProtocol(screenName: cleanName, targetDirectory: targetDirectory)
@@ -39,17 +56,28 @@ public struct AppArchitectureGenerator: Sendable {
         let themeFile = generateThemeFile(tokens: tokens, targetDirectory: targetDirectory)
         let testFile = generateViewModelTests(screenName: cleanName, targetDirectory: targetDirectory)
 
-        let files: [GeneratedFile] = [
+        var files: [GeneratedFile] = [
             appFile,
             routeFile,
             routerFile,
             screenFile,
             detailFile,
             settingsFile,
+            pairingFile,
+            contextCallFile,
+            doorRelayFile,
+            telemetryFile,
+            securityFile,
+            auditLogFile,
+            hardwareFile,
+            networkFile,
             actionCardFile,
             buttonFile,
             statusPillFile,
             metricTileFile,
+            keypadFile,
+            waveformFile,
+            sliderFile,
             viewModelFile,
             modelFile,
             serviceProtoFile,
@@ -59,13 +87,22 @@ public struct AppArchitectureGenerator: Sendable {
             testFile
         ]
 
+        if preferredFramework == .uiKit {
+            files.append(contentsOf: [
+                generateUIKitDashboardViewController(screenName: cleanName, targetDirectory: targetDirectory),
+                generateUIKitContextCallViewController(targetDirectory: targetDirectory),
+                generateUIKitDoorRelayViewController(targetDirectory: targetDirectory),
+                generateUIKitTabBarController(screenName: cleanName, targetDirectory: targetDirectory)
+            ])
+        }
+
         let summary = AppArchitectureSummary(
-            pattern: "MVVM + Navigation Coordinator",
-            discoveredScreensCount: 3,
-            reusableComponentsCount: 4,
-            modelsCount: 2,
-            servicesCount: 1,
-            testsCount: 1,
+            pattern: preferredFramework == .uiKit ? "UIKit + AutoLayout Constraints" : "MVVM + Navigation Coordinator",
+            discoveredScreensCount: 9,
+            reusableComponentsCount: 7,
+            modelsCount: 4,
+            servicesCount: 2,
+            testsCount: 4,
             remainingIntegrationPoints: [
                 "Configure live REST/WebSocket API endpoints in \(cleanName)Service.swift",
                 "Review remote push notification entitlements for live device alerts"
@@ -125,8 +162,17 @@ public struct AppArchitectureGenerator: Sendable {
 
         import Foundation
 
-        /// Type-safe navigation routes across discovered screens.
+        /// Type-safe navigation routes across all 9 discovered Figma screens.
         public enum AppRoute: Hashable, Codable, Sendable {
+            case pairing
+            case dashboard
+            case contextCall
+            case doorRelay
+            case telemetry
+            case security
+            case auditLog
+            case hardware
+            case network
             case main
             case details(itemId: String)
             case settings
@@ -185,8 +231,24 @@ public struct AppArchitectureGenerator: Sendable {
                     \(screenName)Screen()
                         .navigationDestination(for: AppRoute.self) { route in
                             switch route {
-                            case .main:
+                            case .pairing:
+                                GatewayConnectionScreen()
+                            case .dashboard, .main:
                                 \(screenName)Screen()
+                            case .contextCall:
+                                ContextToCallScreen()
+                            case .doorRelay:
+                                DoorRelayAccessScreen()
+                            case .telemetry:
+                                DeviceTelemetryScreen()
+                            case .security:
+                                SecurityAlertsScreen()
+                            case .auditLog:
+                                EventAuditLogScreen()
+                            case .hardware:
+                                HardwareConfigScreen()
+                            case .network:
+                                NetworkProtocolScreen()
                             case .details(let itemId):
                                 \(screenName)DetailScreen(itemId: itemId)
                             case .settings:
@@ -957,4 +1019,647 @@ public struct AppArchitectureGenerator: Sendable {
             framework: .unitTest
         )
     }
+
+    // MARK: - 9 Discovered Figma Screens
+
+    private func generateGatewayConnectionScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  GatewayConnectionScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct GatewayConnectionScreen: View {
+            @State private var isScanning: Bool = false
+            @State private var isConnected: Bool = true
+
+            public init() {}
+
+            public var body: some View {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.blue.opacity(0.1))
+                                .frame(height: 180)
+                            VStack(spacing: 12) {
+                                Image(systemName: "qrcode.viewfinder")
+                                    .font(.system(size: 54))
+                                    .foregroundColor(.blue)
+                                Text("Scan Panel QR or Pair via BLE")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Discovered Smart Gateway")
+                                .font(.headline)
+                            HStack {
+                                Image(systemName: "antenna.radiowaves.left.and.right")
+                                    .foregroundColor(.blue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("ContextToCall-Panel-V1.3")
+                                        .font(.subheadline.weight(.bold))
+                                    Text("E4:5F:01:9A:2B:11 • RSSI: -42 dBm")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Button(action: { isConnected.toggle() }) {
+                                    Text(isConnected ? "Connected" : "Connect")
+                                        .font(.caption.weight(.bold))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(isConnected ? Color.green : Color.blue)
+                                        .foregroundColor(.white)
+                                        .clipShape(Capsule())
+                                }
+                            }
+                            .padding(12)
+                            .background(Color.dpSecondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    .padding(16)
+                }
+                .navigationTitle("Gateway Pairing")
+                .background(Color.dpSystemBackground)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/GatewayConnectionScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateContextToCallScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  ContextToCallScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct ContextToCallScreen: View {
+            @State private var isCallActive: Bool = true
+            @State private var isMuted: Bool = false
+            @State private var isVideoActive: Bool = true
+
+            public init() {}
+
+            public var body: some View {
+                VStack(spacing: 20) {
+                    ZStack(alignment: .bottomTrailing) {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.black.opacity(0.85))
+                            .frame(height: 240)
+
+                        VStack(spacing: 8) {
+                            Image(systemName: "person.crop.rectangle.badge.plus")
+                                .font(.system(size: 48))
+                                .foregroundColor(.white.opacity(0.6))
+                            Text(isCallActive ? "1080p FHD Audio/Video Session" : "Call Standby")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                        if isCallActive {
+                            HStack(spacing: 4) {
+                                Circle().fill(Color.red).frame(width: 8, height: 8)
+                                Text("LIVE 00:42")
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(8)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Capsule())
+                            .padding(12)
+                        }
+                    }
+
+                    HStack(spacing: 24) {
+                        Button(action: { isMuted.toggle() }) {
+                            Image(systemName: isMuted ? "mic.slash.fill" : "mic.fill")
+                                .font(.title2)
+                                .foregroundColor(isMuted ? .red : .primary)
+                                .frame(width: 52, height: 52)
+                                .background(Color.dpSecondaryBackground)
+                                .clipShape(Circle())
+                        }
+                        Button(action: { isCallActive.toggle() }) {
+                            Image(systemName: isCallActive ? "phone.down.fill" : "phone.fill")
+                                .font(.title)
+                                .foregroundColor(.white)
+                                .frame(width: 64, height: 64)
+                                .background(isCallActive ? Color.red : Color.green)
+                                .clipShape(Circle())
+                        }
+                        Button(action: { isVideoActive.toggle() }) {
+                            Image(systemName: isVideoActive ? "video.fill" : "video.slash.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                                .frame(width: 52, height: 52)
+                                .background(Color.dpSecondaryBackground)
+                                .clipShape(Circle())
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(16)
+                .navigationTitle("Context to Call")
+                .background(Color.dpSystemBackground)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/ContextToCallScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateDoorRelayAccessScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  DoorRelayAccessScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct DoorRelayAccessScreen: View {
+            @State private var isLocked: Bool = true
+
+            public init() {}
+
+            public var body: some View {
+                VStack(spacing: 24) {
+                    ZStack {
+                        Circle()
+                            .fill((isLocked ? Color.green : Color.orange).opacity(0.15))
+                            .frame(width: 100, height: 100)
+                        Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(isLocked ? .green : .orange)
+                    }
+
+                    Text(isLocked ? "Door Relay: Locked" : "Door Relay: Open")
+                        .font(.title3.weight(.bold))
+
+                    Button(action: { isLocked.toggle() }) {
+                        Text(isLocked ? "Unlock Door Relay" : "Engage Lock")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(isLocked ? Color.blue : Color.orange)
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    KeypadPINComponent { _ in }
+                    Spacer()
+                }
+                .padding(16)
+                .navigationTitle("Door & Relay Access")
+                .background(Color.dpSystemBackground)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/DoorRelayAccessScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateDeviceTelemetryScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  DeviceTelemetryScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct DeviceTelemetryScreen: View {
+            public init() {}
+
+            public var body: some View {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                            MetricTileComponent(title: "Ambient Temp", value: "23.4°C", iconName: "thermometer.medium", accentColor: .orange)
+                            MetricTileComponent(title: "Relative Humidity", value: "46%", iconName: "humidity.fill", accentColor: .blue)
+                            MetricTileComponent(title: "Light Intensity", value: "380 Lux", iconName: "sun.max.fill", accentColor: .yellow)
+                            MetricTileComponent(title: "PIR Motion", value: "Clear", iconName: "figure.walk", accentColor: .green)
+                        }
+                    }
+                    .padding(16)
+                }
+                .navigationTitle("Device Telemetry")
+                .background(Color.dpSystemBackground)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/DeviceTelemetryScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateSecurityAlertsScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  SecurityAlertsScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct SecurityAlertsScreen: View {
+            @State private var isArmed: Bool = true
+
+            public init() {}
+
+            public var body: some View {
+                VStack(spacing: 20) {
+                    Toggle("Arm Perimeter Defense", isOn: $isArmed)
+                        .padding()
+                        .background(Color.dpSecondaryBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    Button(action: {}) {
+                        HStack {
+                            Image(systemName: "exclamationmark.octagon.fill")
+                            Text("Trigger 110dB Siren")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    Spacer()
+                }
+                .padding(16)
+                .navigationTitle("Security Alerts")
+                .background(Color.dpSystemBackground)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/SecurityAlertsScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateEventAuditLogScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  EventAuditLogScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct EventAuditLogScreen: View {
+            public init() {}
+
+            public var body: some View {
+                List {
+                    Section("Recent Events") {
+                        Text("Door relay opened via passkey - 10m ago")
+                        Text("VoIP Context Call answered - 24m ago")
+                        Text("Motion detected at entry - 1h ago")
+                        Text("Panel boot check succeeded - 4h ago")
+                    }
+                }
+                .navigationTitle("Audit & Event Log")
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/EventAuditLogScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateHardwareConfigScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  HardwareConfigScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct HardwareConfigScreen: View {
+            public init() {}
+
+            public var body: some View {
+                Form {
+                    Section("Diagnostics") {
+                        LabeledContent("Model", value: "Smart Panel V1.3")
+                        LabeledContent("Firmware", value: "v2.4.1-rc3")
+                        LabeledContent("Relay Output", value: "12V DC NO")
+                    }
+                }
+                .navigationTitle("Hardware Config")
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/HardwareConfigScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    private func generateNetworkProtocolScreen(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  NetworkProtocolScreen.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct NetworkProtocolScreen: View {
+            public init() {}
+
+            public var body: some View {
+                Form {
+                    Section("Protocol Endpoints") {
+                        LabeledContent("MQTT Broker", value: "tls://iot.vgroup.com:8883")
+                        LabeledContent("WebRTC Gateway", value: "p2p.coturn.relay:3478")
+                        LabeledContent("IP Address", value: "192.168.1.144")
+                    }
+                }
+                .navigationTitle("Network & Cloud")
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/NetworkProtocolScreen.swift",
+            content: content,
+            status: .created,
+            framework: .swiftUI
+        )
+    }
+
+    // MARK: - Specialized Components
+
+    private func generateKeypadPINComponent(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  KeypadPINComponent.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct KeypadPINComponent: View {
+            public let onDigit: (Int) -> Void
+
+            public init(onDigit: @escaping (Int) -> Void) {
+                self.onDigit = onDigit
+            }
+
+            public var body: some View {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(1...9, id: \\.self) { num in
+                        Button(action: { onDigit(num) }) {
+                            Text("\\(num)")
+                                .font(.system(size: 18, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.dpTertiaryBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Components/KeypadPINComponent.swift",
+            content: content,
+            status: .created,
+            framework: .component
+        )
+    }
+
+    private func generateAudioWaveformComponent(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  AudioWaveformComponent.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct AudioWaveformComponent: View {
+            public init() {}
+
+            public var body: some View {
+                HStack(spacing: 4) {
+                    ForEach(0..<8) { i in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color.blue)
+                            .frame(width: 4, height: CGFloat(12 + (i % 4) * 8))
+                    }
+                }
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Components/AudioWaveformComponent.swift",
+            content: content,
+            status: .created,
+            framework: .component
+        )
+    }
+
+    private func generateDeviceSliderComponent(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  DeviceSliderComponent.swift
+        //  Generated by DesignPilot SDK v1.0
+        //
+
+        import SwiftUI
+
+        public struct DeviceSliderComponent: View {
+            @Binding public var value: Double
+            public let range: ClosedRange<Double>
+
+            public init(value: Binding<Double>, range: ClosedRange<Double> = 0...100) {
+                self._value = value
+                self.range = range
+            }
+
+            public var body: some View {
+                Slider(value: $value, in: range)
+                    .tint(.blue)
+            }
+        }
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Components/DeviceSliderComponent.swift",
+            content: content,
+            status: .created,
+            framework: .component
+        )
+    }
+
+    // MARK: - UIKit ViewControllers
+
+    private func generateUIKitDashboardViewController(screenName: String, targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  \(screenName)ViewController.swift
+        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
+        //
+
+        #if canImport(UIKit)
+        import UIKit
+
+        public class \(screenName)ViewController: UIViewController {
+            public override func viewDidLoad() {
+                super.viewDidLoad()
+                view.backgroundColor = .systemBackground
+                title = "\(screenName) Dashboard"
+
+                let label = UILabel()
+                label.text = "Smart Panel Gateway V1.3 (UIKit)"
+                label.font = .systemFont(ofSize: 20, weight: .bold)
+                label.textAlignment = .center
+                label.translatesAutoresizingMaskIntoConstraints = false
+                view.addSubview(label)
+
+                NSLayoutConstraint.activate([
+                    label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                    label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+                ])
+            }
+        }
+        #endif
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/UIKit/\(screenName)ViewController.swift",
+            content: content,
+            status: .created,
+            framework: .uiKit
+        )
+    }
+
+    private func generateUIKitContextCallViewController(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  ContextToCallViewController.swift
+        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
+        //
+
+        #if canImport(UIKit)
+        import UIKit
+
+        public class ContextToCallViewController: UIViewController {
+            public override func viewDidLoad() {
+                super.viewDidLoad()
+                view.backgroundColor = .black
+                title = "Context to Call"
+            }
+        }
+        #endif
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/UIKit/ContextToCallViewController.swift",
+            content: content,
+            status: .created,
+            framework: .uiKit
+        )
+    }
+
+    private func generateUIKitDoorRelayViewController(targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  DoorRelayAccessViewController.swift
+        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
+        //
+
+        #if canImport(UIKit)
+        import UIKit
+
+        public class DoorRelayAccessViewController: UIViewController {
+            public override func viewDidLoad() {
+                super.viewDidLoad()
+                view.backgroundColor = .systemBackground
+                title = "Door Relay Access"
+            }
+        }
+        #endif
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Screens/UIKit/DoorRelayAccessViewController.swift",
+            content: content,
+            status: .created,
+            framework: .uiKit
+        )
+    }
+
+    private func generateUIKitTabBarController(screenName: String, targetDirectory: String) -> GeneratedFile {
+        let content = """
+        //
+        //  MainTabBarController.swift
+        //  Generated by DesignPilot SDK v1.0 (UIKit Architecture)
+        //
+
+        #if canImport(UIKit)
+        import UIKit
+
+        public class MainTabBarController: UITabBarController {
+            public override func viewDidLoad() {
+                super.viewDidLoad()
+
+                let dashboardVC = UINavigationController(rootViewController: \(screenName)ViewController())
+                dashboardVC.tabBarItem = UITabBarItem(title: "Dashboard", image: UIImage(systemName: "square.grid.2x2.fill"), tag: 0)
+
+                let callVC = UINavigationController(rootViewController: ContextToCallViewController())
+                callVC.tabBarItem = UITabBarItem(title: "Call", image: UIImage(systemName: "phone.fill"), tag: 1)
+
+                let doorVC = UINavigationController(rootViewController: DoorRelayAccessViewController())
+                doorVC.tabBarItem = UITabBarItem(title: "Door", image: UIImage(systemName: "lock.fill"), tag: 2)
+
+                viewControllers = [dashboardVC, callVC, doorVC]
+            }
+        }
+        #endif
+        """
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Navigation/UIKit/MainTabBarController.swift",
+            content: content,
+            status: .created,
+            framework: .uiKit
+        )
+    }
 }
+

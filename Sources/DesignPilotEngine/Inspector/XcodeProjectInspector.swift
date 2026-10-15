@@ -18,7 +18,6 @@ public struct XcodeProjectInspector: Sendable {
 
         var minDeployment = "16.0"
         var swiftVer = "6.0"
-        let framework: ProjectUIFramework = .swiftUI
         var viewsDir: String? = nil
         var assetCatalogs: [String] = []
 
@@ -61,6 +60,35 @@ public struct XcodeProjectInspector: Sendable {
             }
         }
 
+        var detectedFramework: ProjectUIFramework = .swiftUI
+
+        // Scan Swift and Interface Builder files in project to detect framework
+        if let enumerator = fileManager.enumerator(atPath: projectPath) {
+            var uiKitCount = 0
+            var swiftUICount = 0
+            for case let relativeFile as String in enumerator {
+                if relativeFile.contains(".build") || relativeFile.contains(".git") || relativeFile.contains(".swiftpm") {
+                    continue
+                }
+                if relativeFile.hasSuffix(".swift") {
+                    let fileURL = url.appendingPathComponent(relativeFile)
+                    if let code = try? String(contentsOf: fileURL, encoding: .utf8) {
+                        if code.contains("import SwiftUI") || code.contains(": View") || code.contains(": App") {
+                            swiftUICount += 1
+                        }
+                        if code.contains("UIViewController") || code.contains("UIApplicationDelegate") {
+                            uiKitCount += 1
+                        }
+                    }
+                } else if relativeFile.hasSuffix(".storyboard") || relativeFile.hasSuffix(".xib") {
+                    uiKitCount += 2
+                }
+            }
+            if uiKitCount > 0 && swiftUICount == 0 {
+                detectedFramework = .uiKit
+            }
+        }
+
         // Query available simulators
         let simulators = queryAvailableSimulators()
 
@@ -69,7 +97,7 @@ public struct XcodeProjectInspector: Sendable {
             projectRootPath: projectPath,
             minDeploymentTarget: minDeployment,
             swiftVersion: swiftVer,
-            primaryFramework: framework,
+            primaryFramework: detectedFramework,
             existingViewsDirectory: viewsDir,
             assetCatalogPaths: assetCatalogs,
             supportedDeviceFamilies: ["iPhone", "iPad"],

@@ -606,11 +606,11 @@ public struct MockEngineClient: EngineClientProtocol {
 
         let archSummary = AppArchitectureSummary(
             pattern: "MVVM + Navigation Coordinator",
-            discoveredScreensCount: 3,
-            reusableComponentsCount: 4,
-            modelsCount: 2,
-            servicesCount: 1,
-            testsCount: 1,
+            discoveredScreensCount: 9,
+            reusableComponentsCount: 7,
+            modelsCount: 4,
+            servicesCount: 2,
+            testsCount: 4,
             remainingIntegrationPoints: [
                 "Configure live REST/WebSocket API endpoints in \(sanitizedName)Service.swift",
                 "Review remote push notification entitlements for live device alerts"

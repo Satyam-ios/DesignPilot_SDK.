@@ -90,11 +90,11 @@ public struct AppArchitectureSummary: Codable, Sendable, Hashable {
 
     public init(
         pattern: String = "MVVM + Navigation Coordinator",
-        discoveredScreensCount: Int = 2,
-        reusableComponentsCount: Int = 4,
-        modelsCount: Int = 2,
-        servicesCount: Int = 1,
-        testsCount: Int = 1,
+        discoveredScreensCount: Int = 9,
+        reusableComponentsCount: Int = 7,
+        modelsCount: Int = 4,
+        servicesCount: Int = 2,
+        testsCount: Int = 4,
         remainingIntegrationPoints: [String] = [
             "Configure remote REST/GraphQL backend endpoint in Service implementation",
             "Configure remote Push Notification handling & entitlements"

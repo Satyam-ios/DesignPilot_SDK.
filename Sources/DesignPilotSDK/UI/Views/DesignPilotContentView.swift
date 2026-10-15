@@ -23,6 +23,14 @@ public struct DesignPilotContentView: View {
                     onBackToGenerator: { viewModel.reset() },
                     onInspectArchitecture: { viewModel.isReviewPresented = true }
                 )
+            } else if case .inProgress(let stage, let progress, let message) = viewModel.state {
+                AutomaticAppLoaderView(
+                    stage: stage,
+                    progress: progress,
+                    message: message,
+                    uiFramework: FigmaAppConfiguration.uiFramework,
+                    discoveredScreensCount: 9
+                )
             } else {
                 generatorFormView
             }

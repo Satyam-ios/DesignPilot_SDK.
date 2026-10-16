@@ -20,6 +20,9 @@ public enum FigmaAppConfiguration {
     /// Preferred UI framework. Defaults to `.automatic` to match the target project.
     nonisolated(unsafe) public static var uiFramework: UIFramework = .automatic
 
+    /// Optional Figma personal access token or OAuth credential for accessing private files.
+    nonisolated(unsafe) public static var figmaAccessToken: String? = nil
+
     /// When true, the app automatically starts analysis, code generation, and launch immediately upon running.
     nonisolated(unsafe) public static var autoGenerateOnLaunch: Bool = true
 }
@@ -30,14 +33,20 @@ public struct DesignPilot {
     /// - Parameters:
     ///   - figmaURL: The Figma design URL to convert into a working iOS application.
     ///   - uiFramework: The preferred UI framework (.automatic, .swiftUI, or .uiKit).
+    ///   - figmaAccessToken: Optional Figma personal access token for private designs.
     ///   - autoGenerateOnLaunch: Whether to generate and launch automatically on app launch.
     public static func configure(
         figmaURL: String,
         uiFramework: UIFramework = .automatic,
+        figmaAccessToken: String? = nil,
         autoGenerateOnLaunch: Bool = true
     ) {
         FigmaAppConfiguration.figmaURL = figmaURL
         FigmaAppConfiguration.uiFramework = uiFramework
+        FigmaAppConfiguration.figmaAccessToken = figmaAccessToken
         FigmaAppConfiguration.autoGenerateOnLaunch = autoGenerateOnLaunch
+        if let token = figmaAccessToken {
+            DesignPilotConfiguration.shared.figmaAccessToken = token
+        }
     }
 }

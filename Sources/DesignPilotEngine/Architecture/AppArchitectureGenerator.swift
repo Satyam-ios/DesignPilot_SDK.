@@ -1,5 +1,5 @@
 import Foundation
-import DesignPilotSDK
+@_exported import DesignPilotSDK
 
 /// Generates a complete, modular, and buildable iOS application architecture.
 public struct AppArchitectureGenerator: Sendable {

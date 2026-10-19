@@ -240,7 +240,7 @@ public struct GenerationCompletionReportView: View {
 
             VStack(spacing: 10) {
                 detailRow(label: "Source Design", value: "Online Bike Shopping App (Figma)")
-                detailRow(label: "Target Framework", value: FigmaAppConfiguration.uiFramework.rawValue)
+                detailRow(label: "Target Framework", value: FigmaAppConfiguration.uiFramework.title)
                 detailRow(label: "Architecture Pattern", value: result.architectureSummary.pattern)
                 detailRow(label: "Outlet & Action Audit", value: "Valid connections verified (0 broken bindings)")
                 detailRow(label: "Toolchain Verification", value: "Xcode 16 / Swift 6.0 Compliant")

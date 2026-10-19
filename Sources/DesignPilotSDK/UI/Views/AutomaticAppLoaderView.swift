@@ -131,7 +131,7 @@ public struct AutomaticAppLoaderView: View {
                 // Live Architecture Discovery Metrics
                 HStack(spacing: 12) {
                     metricTag(icon: "rectangle.stack.fill", title: "Screens", value: "\(discoveredScreensCount)")
-                    metricTag(icon: "cpu.fill", title: "Framework", value: uiFramework.rawValue)
+                    metricTag(icon: "cpu.fill", title: "Framework", value: uiFramework.title)
                     metricTag(icon: "shield.checkered", title: "Validation", value: "Strict")
                 }
                 .padding(.horizontal, 24)

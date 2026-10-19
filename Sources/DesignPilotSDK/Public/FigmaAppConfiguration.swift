@@ -1,14 +1,32 @@
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
+#if canImport(SwiftUI)
+import SwiftUI
+#endif
 
 /// Target UI rendering framework selected by the developer or detected automatically from the target project.
-public enum UIFramework: String, Codable, Sendable, CaseIterable {
+/// Compatible with Swift, SwiftUI, UIKit, and Objective-C projects.
+@objc(DPUIFramework)
+public enum DPUIFramework: Int, Codable, Sendable, CaseIterable {
     /// Inspects the host project architecture to automatically select SwiftUI or UIKit.
-    case automatic = "Automatic"
+    case automatic = 0
     /// Generates pure SwiftUI views, `@Observable` ViewModels, and `NavigationStack` routing.
-    case swiftUI = "SwiftUI"
+    case swiftUI = 1
     /// Generates UIKit view controllers, AutoLayout constraints, and `UITabBarController` / `UINavigationController`.
-    case uiKit = "UIKit"
+    case uiKit = 2
+
+    public var title: String {
+        switch self {
+        case .automatic: return "Automatic"
+        case .swiftUI: return "SwiftUI"
+        case .uiKit: return "UIKit"
+        }
+    }
 }
+
+public typealias UIFramework = DPUIFramework
 
 /// Central configuration for automatic Figma-to-iOS app generation.
 /// Developers configure this once in code or project settings, and the library automatically
@@ -65,9 +83,26 @@ public enum FigmaAppConfiguration {
     }
 }
 
-/// Global convenience entry point for DesignPilot configuration.
-public struct DesignPilot {
-    /// Configures the automatic generation engine.
+/// Global convenience entry point for DesignPilot configuration across Swift, SwiftUI, UIKit, and Objective-C.
+@objc(DPDesignPilot)
+public final class DesignPilot: NSObject {
+    /// Objective-C and UIKit convenience configuration entry point.
+    @objc(configureWithFigmaURL:uiFramework:autoGenerateOnLaunch:)
+    public static func configure(
+        figmaURL: String,
+        uiFramework: DPUIFramework = .automatic,
+        autoGenerateOnLaunch: Bool = true
+    ) {
+        configure(
+            figmaURL: figmaURL,
+            uiFramework: uiFramework,
+            figmaAccessToken: nil,
+            autoGenerateOnLaunch: autoGenerateOnLaunch,
+            isGenerationBootstrapEnabled: nil
+        )
+    }
+
+    /// Full Swift configuration entry point.
     /// The developer-provided URL always takes precedence over any default, cached, or previously stored URL.
     /// - Parameters:
     ///   - figmaURL: The Figma design URL to convert into a working iOS application.
@@ -103,4 +138,49 @@ public struct DesignPilot {
             DesignPilotConfiguration.shared.figmaAccessToken = token
         }
     }
+
+    /// Clears any cached runtime URL and bootstrap state to ensure a fresh generation run.
+    @objc public static func resetStoredConfiguration() {
+        FigmaAppConfiguration.resetStoredConfiguration()
+    }
 }
+
+#if canImport(UIKit)
+extension DesignPilot {
+    /// Creates a UIViewController hosting the DesignPilot generation and preview interface.
+    /// Compatible with UIKit (Swift & Objective-C).
+    @MainActor
+    @objc(makeViewControllerWithFigmaURL:uiFramework:)
+    public static func makeViewController(
+        figmaURL: String? = nil,
+        uiFramework: DPUIFramework = .automatic
+    ) -> UIViewController {
+        let url = figmaURL ?? FigmaAppConfiguration.figmaURL
+        let view = DesignPilotView(figmaURL: url, uiFramework: uiFramework)
+        return UIHostingController(rootView: view)
+    }
+
+    /// Presents DesignPilot modal interface from any UIViewController in Swift or Objective-C.
+    @MainActor
+    @objc(presentFromViewController:figmaURL:uiFramework:animated:completion:)
+    public static func present(
+        from presenter: UIViewController,
+        figmaURL: String? = nil,
+        uiFramework: DPUIFramework = .automatic,
+        animated: Bool = true,
+        completion: (() -> Void)? = nil
+    ) {
+        let controller = makeViewController(figmaURL: figmaURL, uiFramework: uiFramework)
+        controller.modalPresentationStyle = .fullScreen
+        presenter.present(controller, animated: animated, completion: completion)
+    }
+
+    /// Automatically presents DesignPilot from a UIViewController if autoGenerateOnLaunch is true.
+    @MainActor
+    @objc(autoPresentFromViewController:)
+    public static func autoPresentIfEnabled(from presenter: UIViewController) {
+        guard FigmaAppConfiguration.autoGenerateOnLaunch && !FigmaAppConfiguration.figmaURL.isEmpty else { return }
+        present(from: presenter)
+    }
+}
+#endif

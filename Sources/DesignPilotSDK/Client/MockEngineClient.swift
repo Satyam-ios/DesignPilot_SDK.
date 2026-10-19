@@ -75,6 +75,34 @@ public struct MockEngineClient: EngineClientProtocol {
         onProgress(.visualValidation, 0.98, "Simulating layout on iPhone 16 Pro... (99.4% structural match to Figma design)")
         try await Task.sleep(nanoseconds: 150_000_000)
 
+        return Self.synthesizeResult(for: request)
+    }
+
+    /// Provides immediate access to the synthesized Online Bike Shopping App generation result.
+    public static func defaultPresetResult() -> GenerationResult {
+        let parsed = try? FigmaURL.parse(FigmaAppConfiguration.figmaURL)
+        let source: DesignSource
+        if let p = parsed {
+            source = .figmaURL(p)
+        } else {
+            source = .figmaURL(FigmaURL(
+                rawString: FigmaAppConfiguration.figmaURL,
+                fileKey: "z3bsh0M4MFRN7HvwWuYT7e",
+                documentTitle: "Untitled",
+                nodeId: "0:1"
+            ))
+        }
+        let req = GenerationRequest(
+            source: source,
+            preferredFramework: (FigmaAppConfiguration.uiFramework == .uiKit) ? .uiKit : .swiftUI,
+            targetDirectory: "Views/Generated",
+            visualAcceptanceThreshold: 0.95,
+            maxVisualIterations: 3
+        )
+        return synthesizeResult(for: req)
+    }
+
+    private static func synthesizeResult(for request: GenerationRequest) -> GenerationResult {
         let screenTitle = "OnlineBikeCatalog"
         let sanitizedName = screenTitle
 

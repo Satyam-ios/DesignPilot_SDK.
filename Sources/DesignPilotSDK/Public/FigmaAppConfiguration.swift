@@ -25,6 +25,35 @@ public enum FigmaAppConfiguration {
 
     /// When true, the app automatically starts analysis, code generation, and launch immediately upon running.
     nonisolated(unsafe) public static var autoGenerateOnLaunch: Bool = true
+
+    /// Controls whether the generation bootstrap (analysis loader and generation pipeline) runs on app launch.
+    /// Default is true on first launch. Once code generation completes and files are written into the project,
+    /// this can be disabled to launch the generated native UI directly with zero delay.
+    nonisolated(unsafe) public static var isGenerationBootstrapEnabled: Bool {
+        get {
+            if let stored = UserDefaults.standard.object(forKey: bootstrapStorageKey) as? Bool {
+                return stored
+            }
+            return _isGenerationBootstrapEnabled
+        }
+        set {
+            _isGenerationBootstrapEnabled = newValue
+            UserDefaults.standard.set(newValue, forKey: bootstrapStorageKey)
+        }
+    }
+
+    nonisolated(unsafe) private static var _isGenerationBootstrapEnabled: Bool = true
+    private static let bootstrapStorageKey = "DesignPilot_isGenerationBootstrapEnabled"
+
+    /// Disables the generation bootstrap to bypass the analysis loader and launch directly into the generated UI.
+    public static func disableGenerationBootstrap() {
+        isGenerationBootstrapEnabled = false
+    }
+
+    /// Re-enables the generation bootstrap to re-analyze the Figma design and regenerate UI files.
+    public static func enableGenerationBootstrap() {
+        isGenerationBootstrapEnabled = true
+    }
 }
 
 /// Global convenience entry point for DesignPilot configuration.
@@ -35,16 +64,21 @@ public struct DesignPilot {
     ///   - uiFramework: The preferred UI framework (.automatic, .swiftUI, or .uiKit).
     ///   - figmaAccessToken: Optional Figma personal access token for private designs.
     ///   - autoGenerateOnLaunch: Whether to generate and launch automatically on app launch.
+    ///   - isGenerationBootstrapEnabled: Optional flag to explicitly enable or disable generation bootstrap.
     public static func configure(
         figmaURL: String,
         uiFramework: UIFramework = .automatic,
         figmaAccessToken: String? = nil,
-        autoGenerateOnLaunch: Bool = true
+        autoGenerateOnLaunch: Bool = true,
+        isGenerationBootstrapEnabled: Bool? = nil
     ) {
         FigmaAppConfiguration.figmaURL = figmaURL
         FigmaAppConfiguration.uiFramework = uiFramework
         FigmaAppConfiguration.figmaAccessToken = figmaAccessToken
         FigmaAppConfiguration.autoGenerateOnLaunch = autoGenerateOnLaunch
+        if let bootstrap = isGenerationBootstrapEnabled {
+            FigmaAppConfiguration.isGenerationBootstrapEnabled = bootstrap
+        }
         if let token = figmaAccessToken {
             DesignPilotConfiguration.shared.figmaAccessToken = token
         }

@@ -9,19 +9,37 @@ public struct DesignPilotContentView: View {
         self.viewModel = viewModel
     }
 
+    @State private var isShowingLiveAppDirectly: Bool = !FigmaAppConfiguration.isGenerationBootstrapEnabled
+
     public var body: some View {
         Group {
-            if case .readyForReview(let result) = viewModel.state {
+            if isShowingLiveAppDirectly, let activeResult = viewModel.lastResult ?? viewModel.presetResult {
                 LiveGeneratedAppView(
-                    result: result,
-                    onBackToGenerator: { viewModel.reset() },
+                    result: activeResult,
+                    onBackToGenerator: {
+                        withAnimation { isShowingLiveAppDirectly = false }
+                    },
                     onInspectArchitecture: { viewModel.isReviewPresented = true }
                 )
-            } else if case .completed = viewModel.state, let result = viewModel.lastResult {
-                LiveGeneratedAppView(
+            } else if case .readyForReview(let result) = viewModel.state {
+                GenerationCompletionReportView(
                     result: result,
-                    onBackToGenerator: { viewModel.reset() },
-                    onInspectArchitecture: { viewModel.isReviewPresented = true }
+                    onLaunchDirectly: {
+                        withAnimation { isShowingLiveAppDirectly = true }
+                    },
+                    onReviewFiles: {
+                        viewModel.isReviewPresented = true
+                    }
+                )
+            } else if case .completed = viewModel.state, let result = viewModel.lastResult {
+                GenerationCompletionReportView(
+                    result: result,
+                    onLaunchDirectly: {
+                        withAnimation { isShowingLiveAppDirectly = true }
+                    },
+                    onReviewFiles: {
+                        viewModel.isReviewPresented = true
+                    }
                 )
             } else if case .inProgress(let stage, let progress, let message) = viewModel.state {
                 AutomaticAppLoaderView(
@@ -29,7 +47,15 @@ public struct DesignPilotContentView: View {
                     progress: progress,
                     message: message,
                     uiFramework: FigmaAppConfiguration.uiFramework,
-                    discoveredScreensCount: 9
+                    discoveredScreensCount: 6
+                )
+            } else if !FigmaAppConfiguration.isGenerationBootstrapEnabled, let preset = viewModel.presetResult {
+                LiveGeneratedAppView(
+                    result: preset,
+                    onBackToGenerator: {
+                        withAnimation { isShowingLiveAppDirectly = false }
+                    },
+                    onInspectArchitecture: { viewModel.isReviewPresented = true }
                 )
             } else {
                 generatorFormView

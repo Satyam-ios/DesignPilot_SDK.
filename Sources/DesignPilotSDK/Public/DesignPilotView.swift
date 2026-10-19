@@ -61,7 +61,7 @@ public struct DesignPilotView: View {
     public var body: some View {
         DesignPilotContentView(viewModel: viewModel)
             .task {
-                if autoTrigger && viewModel.state == .idle {
+                if autoTrigger && FigmaAppConfiguration.isGenerationBootstrapEnabled && viewModel.state == .idle {
                     viewModel.urlInput = FigmaAppConfiguration.figmaURL
                     viewModel.generateUI()
                 }

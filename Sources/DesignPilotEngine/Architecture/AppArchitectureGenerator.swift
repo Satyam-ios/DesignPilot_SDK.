@@ -76,7 +76,8 @@ public struct AppArchitectureGenerator: Sendable {
                 generateUIKitBikeCatalogViewController(targetDirectory: targetDirectory),
                 generateUIKitPeugeotDetailViewController(targetDirectory: targetDirectory),
                 generateUIKitShoppingCartViewController(targetDirectory: targetDirectory),
-                generateUIKitBikeTabBarController(targetDirectory: targetDirectory)
+                generateUIKitBikeTabBarController(targetDirectory: targetDirectory),
+                generateStoryboardFile(targetDirectory: targetDirectory)
             ])
         }
 
@@ -1554,6 +1555,17 @@ public struct AppArchitectureGenerator: Sendable {
         return GeneratedFile(
             relativePath: "\(targetDirectory)/UIKit/UIKitBikeTabBarController.swift",
             content: content,
+            status: .created,
+            framework: .uiKit
+        )
+    }
+
+    private func generateStoryboardFile(targetDirectory: String) -> GeneratedFile {
+        let generator = StoryboardLayoutGenerator()
+        let xml = generator.generateMainStoryboard()
+        return GeneratedFile(
+            relativePath: "\(targetDirectory)/Storyboards/Main.storyboard",
+            content: xml,
             status: .created,
             framework: .uiKit
         )

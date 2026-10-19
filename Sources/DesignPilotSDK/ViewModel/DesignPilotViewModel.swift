@@ -41,6 +41,14 @@ public final class DesignPilotViewModel: ObservableObject {
         savedSource?.pdfInfo
     }
 
+    /// Provides access to the latest or preset generation result.
+    public var presetResult: GenerationResult? {
+        if let last = lastResult {
+            return last
+        }
+        return MockEngineClient.defaultPresetResult()
+    }
+
     public init(
         configuration: DesignPilotConfiguration = .shared,
         client: EngineClientProtocol? = nil

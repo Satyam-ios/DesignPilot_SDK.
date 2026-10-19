@@ -75,15 +75,19 @@ public struct AutomaticAppLoaderView: View {
                 }
 
                 // Primary Message Required by Master Specification
-                VStack(spacing: 10) {
-                    Text("We are creating your app design and screens. Please wait…")
-                        .font(.system(size: 20, weight: .bold))
+                VStack(spacing: 8) {
+                    Text("Analyzing your Figma design and generating the native iOS UI/UX. Please wait...")
+                        .font(.system(size: 19, weight: .bold))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.primary)
                         .padding(.horizontal, 24)
 
+                    Text("We are creating your app design and screens. Please wait…")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.blue)
+
                     Text(message.isEmpty ? stage.descriptionText : message)
-                        .font(.system(size: 13))
+                        .font(.system(size: 12))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 32)

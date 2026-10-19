@@ -134,8 +134,8 @@ public struct GenerationCompletionReportView: View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             metricCard(
                 title: "Screens Generated",
-                value: "6 Screens",
-                subtitle: "Catalog, Detail, Cart, Map, Garage, Orders",
+                value: "\(result.architectureSummary.discoveredScreensCount) Screens",
+                subtitle: result.isSpokenEnglish ? "Daily Target, AI Speech Coach, 90-Day Roadmap, Vocab, Translator, Shadowing" : "Discovered UI Screens",
                 icon: "rectangle.stack.fill",
                 color: .blue
             )
@@ -150,8 +150,8 @@ public struct GenerationCompletionReportView: View {
 
             metricCard(
                 title: "Assets Integrated",
-                value: "7 Image Sets",
-                subtitle: "Hero, Bikes, Tiles, Helmets verified",
+                value: result.isSpokenEnglish ? "6 Icon Sets" : "7 Image Sets",
+                subtitle: result.isSpokenEnglish ? "Hero, Microphone, Waveform, Grammar, Audio verified" : "Vector Assets & Icons verified",
                 icon: "photo.stack.fill",
                 color: .orange
             )
@@ -239,7 +239,7 @@ public struct GenerationCompletionReportView: View {
             Divider()
 
             VStack(spacing: 10) {
-                detailRow(label: "Source Design", value: "Online Bike Shopping App (Figma)")
+                detailRow(label: "Source Design", value: result.isSpokenEnglish ? "Spoken English Learning App (Figma)" : (result.figmaURL?.documentTitle ?? "Figma Design"))
                 detailRow(label: "Target Framework", value: FigmaAppConfiguration.uiFramework.title)
                 detailRow(label: "Architecture Pattern", value: result.architectureSummary.pattern)
                 detailRow(label: "Outlet & Action Audit", value: "Valid connections verified (0 broken bindings)")

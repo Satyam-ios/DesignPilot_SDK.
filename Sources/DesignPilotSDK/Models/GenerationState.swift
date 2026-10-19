@@ -233,16 +233,13 @@ public struct GenerationResult: Identifiable, Codable, Sendable, Hashable {
 
     /// Whether this result corresponds to the Spoken English Learning App design.
     public var isSpokenEnglish: Bool {
-        if screenName.localizedCaseInsensitiveContains("spoken") || screenName.localizedCaseInsensitiveContains("english") {
-            return true
+        if screenName.localizedCaseInsensitiveContains("bike") || screenName.localizedCaseInsensitiveContains("peugeot") {
+            return false
         }
-        if let title = figmaURL?.documentTitle, title.localizedCaseInsensitiveContains("spoken") || title.localizedCaseInsensitiveContains("english") {
-            return true
+        if let title = figmaURL?.documentTitle, title.localizedCaseInsensitiveContains("bike") || title.localizedCaseInsensitiveContains("peugeot") {
+            return false
         }
-        if let raw = figmaURL?.rawString, raw.localizedCaseInsensitiveContains("spoken_english") || raw.localizedCaseInsensitiveContains("english") {
-            return true
-        }
-        return false
+        return true
     }
 
     public init(

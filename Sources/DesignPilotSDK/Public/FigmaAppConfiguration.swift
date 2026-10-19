@@ -137,16 +137,55 @@ public final class DesignPilot: NSObject {
         if let token = figmaAccessToken {
             DesignPilotConfiguration.shared.figmaAccessToken = token
         }
+
+        #if canImport(UIKit)
+        if autoGenerateOnLaunch {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                autoPresentIfPossible()
+            }
+        }
+        #endif
     }
 
     /// Clears any cached runtime URL and bootstrap state to ensure a fresh generation run.
     @objc public static func resetStoredConfiguration() {
         FigmaAppConfiguration.resetStoredConfiguration()
+        #if canImport(UIKit)
+        isAutoPresenting = false
+        #endif
     }
 }
 
 #if canImport(UIKit)
 extension DesignPilot {
+    nonisolated(unsafe) private static var isAutoPresenting: Bool = false
+
+    /// Finds the top-most active UIViewController in the active window scene.
+    @MainActor
+    public static func topMostViewController(base: UIViewController? = nil) -> UIViewController? {
+        let baseVC: UIViewController? = base ?? {
+            let activeScenes = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .filter { $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive }
+            let scene = activeScenes.first ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+            return scene?.windows.first(where: { $0.isKeyWindow })?.rootViewController
+                ?? scene?.windows.first?.rootViewController
+        }()
+
+        if let nav = baseVC as? UINavigationController {
+            return topMostViewController(base: nav.visibleViewController)
+        }
+        if let tab = baseVC as? UITabBarController {
+            if let selected = tab.selectedViewController {
+                return topMostViewController(base: selected)
+            }
+        }
+        if let presented = baseVC?.presentedViewController, !presented.isBeingDismissed {
+            return topMostViewController(base: presented)
+        }
+        return baseVC
+    }
+
     /// Creates a UIViewController hosting the DesignPilot generation and preview interface.
     /// Compatible with UIKit (Swift & Objective-C).
     @MainActor
@@ -180,7 +219,25 @@ extension DesignPilot {
     @objc(autoPresentFromViewController:)
     public static func autoPresentIfEnabled(from presenter: UIViewController) {
         guard FigmaAppConfiguration.autoGenerateOnLaunch && !FigmaAppConfiguration.figmaURL.isEmpty else { return }
-        present(from: presenter)
+        guard !isAutoPresenting else { return }
+        guard !(presenter.presentedViewController is UIHostingController<DesignPilotView>) else { return }
+        isAutoPresenting = true
+        present(from: presenter, animated: true) {
+            isAutoPresenting = false
+        }
+    }
+
+    /// Automatically detects key window and presents DesignPilot if autoGenerateOnLaunch is true.
+    @MainActor
+    @objc(autoPresentIfPossible)
+    public static func autoPresentIfPossible() {
+        guard FigmaAppConfiguration.autoGenerateOnLaunch && !FigmaAppConfiguration.figmaURL.isEmpty else { return }
+        guard !isAutoPresenting else { return }
+        guard let topVC = topMostViewController(), !(topVC is UIHostingController<DesignPilotView>) else { return }
+        isAutoPresenting = true
+        present(from: topVC, animated: true) {
+            isAutoPresenting = false
+        }
     }
 }
 #endif

@@ -28,14 +28,15 @@ public struct MockEngineClient: EngineClientProtocol {
         let isPDF = request.source.isPDF
         let urlStr = request.source.figmaURL?.rawString.lowercased() ?? ""
         let docTitle = request.source.figmaURL?.documentTitle?.lowercased() ?? ""
-        let isSpoken = urlStr.contains("spoken") || urlStr.contains("english") || docTitle.contains("spoken") || docTitle.contains("english")
+        let isBike = urlStr.contains("bike") || docTitle.contains("bike")
+        let isSpoken = !isBike
 
         // Stage 1: Validating URL or Document
         onProgress(
             .validatingURL,
             0.10,
             isPDF ? "Verifying design document structure..." :
-            (isSpoken ? "Verifying Figma access for Spoken English Learning App..." : "Verifying Figma file permissions and API access...")
+            "Verifying Figma access and permissions..."
         )
         try await Task.sleep(nanoseconds: 200_000_000)
 
@@ -106,11 +107,11 @@ public struct MockEngineClient: EngineClientProtocol {
         if let p = parsed {
             source = .figmaURL(p)
         } else {
-            let isSpoken = currentURL.lowercased().contains("spoken") || currentURL.lowercased().contains("english")
+            let isBike = currentURL.lowercased().contains("bike")
             source = .figmaURL(FigmaURL(
                 rawString: currentURL,
                 fileKey: "z3bsh0M4MFRN7HvwWuYT7e",
-                documentTitle: isSpoken ? "Spoken_english" : "Untitled",
+                documentTitle: isBike ? "OnlineBikeShopping" : "Spoken_english",
                 nodeId: "0:1"
             ))
         }
@@ -127,7 +128,8 @@ public struct MockEngineClient: EngineClientProtocol {
     private static func synthesizeResult(for request: GenerationRequest) -> GenerationResult {
         let urlStr = request.source.figmaURL?.rawString.lowercased() ?? ""
         let docTitle = request.source.figmaURL?.documentTitle?.lowercased() ?? ""
-        let isSpoken = urlStr.contains("spoken") || urlStr.contains("english") || docTitle.contains("spoken") || docTitle.contains("english")
+        let isBike = urlStr.contains("bike") || docTitle.contains("bike")
+        let isSpoken = !isBike
 
         if isSpoken {
             let output = SpokenEnglishArchitectureGenerator().generate(

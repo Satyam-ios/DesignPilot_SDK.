@@ -18,10 +18,8 @@ public struct AppArchitectureGenerator: Sendable {
     ) -> ArchitectureOutput {
         let cleanName = sanitize(screenName)
 
-        if sourceName.localizedCaseInsensitiveContains("spoken") ||
-           sourceName.localizedCaseInsensitiveContains("english") ||
-           cleanName.localizedCaseInsensitiveContains("spoken") ||
-           cleanName.localizedCaseInsensitiveContains("english") {
+        let isBike = sourceName.localizedCaseInsensitiveContains("bike") || cleanName.localizedCaseInsensitiveContains("bike")
+        if !isBike {
             return SpokenEnglishArchitectureGenerator().generate(
                 targetDirectory: targetDirectory,
                 preferredFramework: preferredFramework

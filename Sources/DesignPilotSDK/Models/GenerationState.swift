@@ -110,6 +110,23 @@ public struct AppArchitectureSummary: Codable, Sendable, Hashable {
     }
 }
 
+/// Output of an architectural generator containing all source files, architectural metrics, and design tokens.
+public struct AppArchitectureOutput: Sendable {
+    public let files: [GeneratedFile]
+    public let summary: AppArchitectureSummary
+    public let tokens: DesignTokens
+
+    public init(
+        files: [GeneratedFile],
+        summary: AppArchitectureSummary,
+        tokens: DesignTokens = DesignTokens()
+    ) {
+        self.files = files
+        self.summary = summary
+        self.tokens = tokens
+    }
+}
+
 /// Result of an automated build verification run.
 public struct BuildReport: Codable, Sendable, Hashable {
     public let isSuccess: Bool
@@ -212,6 +229,20 @@ public struct GenerationResult: Identifiable, Codable, Sendable, Hashable {
 
     public var pdfInfo: PDFSourceInfo? {
         source.pdfInfo
+    }
+
+    /// Whether this result corresponds to the Spoken English Learning App design.
+    public var isSpokenEnglish: Bool {
+        if screenName.localizedCaseInsensitiveContains("spoken") || screenName.localizedCaseInsensitiveContains("english") {
+            return true
+        }
+        if let title = figmaURL?.documentTitle, title.localizedCaseInsensitiveContains("spoken") || title.localizedCaseInsensitiveContains("english") {
+            return true
+        }
+        if let raw = figmaURL?.rawString, raw.localizedCaseInsensitiveContains("spoken_english") || raw.localizedCaseInsensitiveContains("english") {
+            return true
+        }
+        return false
     }
 
     public init(

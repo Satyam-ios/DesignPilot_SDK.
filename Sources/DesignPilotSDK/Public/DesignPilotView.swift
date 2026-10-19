@@ -25,24 +25,25 @@ public struct DesignPilotView: View {
         self.autoTrigger = FigmaAppConfiguration.autoGenerateOnLaunch && !FigmaAppConfiguration.figmaURL.isEmpty
     }
 
-    /// Initializes DesignPilotView with an explicit Figma URL, UI Framework, and optional access token.
     public init(
         figmaURL: String,
         uiFramework: UIFramework = .automatic,
         figmaAccessToken: String? = nil
     ) {
-        FigmaAppConfiguration.figmaURL = figmaURL
-        FigmaAppConfiguration.uiFramework = uiFramework
-        if let token = figmaAccessToken {
-            FigmaAppConfiguration.figmaAccessToken = token
-            DesignPilotConfiguration.shared.figmaAccessToken = token
-        }
+        DesignPilot.configure(
+            figmaURL: figmaURL,
+            uiFramework: uiFramework,
+            figmaAccessToken: figmaAccessToken,
+            autoGenerateOnLaunch: true
+        )
         var config = DesignPilotConfiguration.shared
         config.preferredFramework = (uiFramework == .uiKit) ? .uiKit : .swiftUI
         if let token = figmaAccessToken {
             config.figmaAccessToken = token
         }
-        self._viewModel = StateObject(wrappedValue: DesignPilotViewModel(configuration: config))
+        let vm = DesignPilotViewModel(configuration: config)
+        vm.urlInput = figmaURL
+        self._viewModel = StateObject(wrappedValue: vm)
         self.autoTrigger = !figmaURL.isEmpty
     }
 

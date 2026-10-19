@@ -59,8 +59,8 @@ public final class DesignPilotViewModel: ObservableObject {
             executionMode: configuration.executionMode
         )
 
-        if urlInput.isEmpty {
-            self.urlInput = "https://www.figma.com/design/d8QW90X7vLp/DesignPilot-iOS-Design-System?node-id=402-1200"
+        if !FigmaAppConfiguration.figmaURL.isEmpty {
+            self.urlInput = FigmaAppConfiguration.figmaURL
         }
     }
 

@@ -254,6 +254,18 @@ public struct LiveGeneratedAppView: View {
     }
 
     public var body: some View {
+        if result.isSpokenEnglish {
+            SpokenEnglishLiveAppView(
+                result: result,
+                onBackToGenerator: onBackToGenerator,
+                onInspectArchitecture: onInspectArchitecture
+            )
+        } else {
+            bikeAppBody
+        }
+    }
+
+    private var bikeAppBody: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 // Dark Background with Angled Diagonal Blue Highlight

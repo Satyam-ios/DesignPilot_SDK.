@@ -14,8 +14,8 @@ public enum UIFramework: String, Codable, Sendable, CaseIterable {
 /// Developers configure this once in code or project settings, and the library automatically
 /// generates the complete multi-screen application on launch without manual URL entry.
 public enum FigmaAppConfiguration {
-    /// The source Figma design URL to generate.
-    nonisolated(unsafe) public static var figmaURL: String = "https://www.figma.com/design/z3bsh0M4MFRN7HvwWuYT7e/Untitled?node-id=0-1&p=f&t=xR1XUFtfaCIbAGe2-0"
+    /// The source Figma design URL to generate. Provided by developer at runtime.
+    nonisolated(unsafe) public static var figmaURL: String = ""
 
     /// Preferred UI framework. Defaults to `.automatic` to match the target project.
     nonisolated(unsafe) public static var uiFramework: UIFramework = .automatic
@@ -43,7 +43,8 @@ public enum FigmaAppConfiguration {
     }
 
     nonisolated(unsafe) private static var _isGenerationBootstrapEnabled: Bool = true
-    private static let bootstrapStorageKey = "DesignPilot_isGenerationBootstrapEnabled"
+    internal static let bootstrapStorageKey = "DesignPilot_isGenerationBootstrapEnabled"
+    internal static let lastConfiguredURLKey = "DesignPilot_lastConfiguredURL"
 
     /// Disables the generation bootstrap to bypass the analysis loader and launch directly into the generated UI.
     public static func disableGenerationBootstrap() {
@@ -54,11 +55,20 @@ public enum FigmaAppConfiguration {
     public static func enableGenerationBootstrap() {
         isGenerationBootstrapEnabled = true
     }
+
+    /// Clears any cached runtime URL and bootstrap state to ensure a fresh generation run.
+    public static func resetStoredConfiguration() {
+        UserDefaults.standard.removeObject(forKey: bootstrapStorageKey)
+        UserDefaults.standard.removeObject(forKey: lastConfiguredURLKey)
+        _isGenerationBootstrapEnabled = true
+        figmaURL = ""
+    }
 }
 
 /// Global convenience entry point for DesignPilot configuration.
 public struct DesignPilot {
     /// Configures the automatic generation engine.
+    /// The developer-provided URL always takes precedence over any default, cached, or previously stored URL.
     /// - Parameters:
     ///   - figmaURL: The Figma design URL to convert into a working iOS application.
     ///   - uiFramework: The preferred UI framework (.automatic, .swiftUI, or .uiKit).
@@ -72,13 +82,23 @@ public struct DesignPilot {
         autoGenerateOnLaunch: Bool = true,
         isGenerationBootstrapEnabled: Bool? = nil
     ) {
+        let previousURL = UserDefaults.standard.string(forKey: FigmaAppConfiguration.lastConfiguredURLKey)
+        let isDifferentURL = (previousURL != nil && !previousURL!.isEmpty && previousURL != figmaURL)
+        UserDefaults.standard.set(figmaURL, forKey: FigmaAppConfiguration.lastConfiguredURLKey)
+
         FigmaAppConfiguration.figmaURL = figmaURL
         FigmaAppConfiguration.uiFramework = uiFramework
         FigmaAppConfiguration.figmaAccessToken = figmaAccessToken
         FigmaAppConfiguration.autoGenerateOnLaunch = autoGenerateOnLaunch
-        if let bootstrap = isGenerationBootstrapEnabled {
+
+        // If the developer provided a different URL at runtime, it must take precedence
+        // over any previous completion or cached bootstrap state.
+        if isDifferentURL {
+            FigmaAppConfiguration.isGenerationBootstrapEnabled = true
+        } else if let bootstrap = isGenerationBootstrapEnabled {
             FigmaAppConfiguration.isGenerationBootstrapEnabled = bootstrap
         }
+
         if let token = figmaAccessToken {
             DesignPilotConfiguration.shared.figmaAccessToken = token
         }

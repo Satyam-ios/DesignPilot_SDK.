@@ -26,12 +26,16 @@ public struct MockEngineClient: EngineClientProtocol {
         onProgress: @Sendable @escaping (PipelineStage, Double, String) -> Void
     ) async throws -> GenerationResult {
         let isPDF = request.source.isPDF
+        let urlStr = request.source.figmaURL?.rawString.lowercased() ?? ""
+        let docTitle = request.source.figmaURL?.documentTitle?.lowercased() ?? ""
+        let isSpoken = urlStr.contains("spoken") || urlStr.contains("english") || docTitle.contains("spoken") || docTitle.contains("english")
 
         // Stage 1: Validating URL or Document
         onProgress(
             .validatingURL,
             0.10,
-            isPDF ? "Verifying design document structure..." : "Verifying Figma file permissions and API access..."
+            isPDF ? "Verifying design document structure..." :
+            (isSpoken ? "Verifying Figma access for Spoken English Learning App..." : "Verifying Figma file permissions and API access...")
         )
         try await Task.sleep(nanoseconds: 200_000_000)
 
@@ -39,16 +43,24 @@ public struct MockEngineClient: EngineClientProtocol {
         onProgress(
             .fetchingDesign,
             0.22,
-            "Retrieved 32 AutoLayout frames, 6 primary screens, and 18 vector assets"
+            isSpoken ? "Retrieved 32 AutoLayout frames, 6 primary screens, and 24 vector assets" : "Retrieved 32 AutoLayout frames, 6 primary screens, and 18 vector assets"
         )
         try await Task.sleep(nanoseconds: 200_000_000)
 
         // Stage 3: Discovering Screens & Reusable Components
-        onProgress(.discoveringComponents, 0.35, "Identified 6 screens: Catalog, Product Detail, Shopping Cart, GPS Route, Garage, Orders")
+        onProgress(
+            .discoveringComponents,
+            0.35,
+            isSpoken ? "Identified 6 screens: Daily Target, AI Speech Coach, 90-Day Roadmap, Multilingual Vocab, Smart Translator, Shadowing Lab" : "Identified 6 screens: Catalog, Product Detail, Shopping Cart, GPS Route, Garage, Orders"
+        )
         try await Task.sleep(nanoseconds: 200_000_000)
 
         // Stage 4: Planning Architecture
-        onProgress(.planningArchitecture, 0.48, "Formulating modular MVVM architecture, BikeAppRouter coordinator, and Services")
+        onProgress(
+            .planningArchitecture,
+            0.48,
+            isSpoken ? "Formulating modular MVVM architecture, SpokenEnglishRouter coordinator, and Services" : "Formulating modular MVVM architecture, BikeAppRouter coordinator, and Services"
+        )
         try await Task.sleep(nanoseconds: 200_000_000)
 
         // Stage 5: Synthesizing Source Files
@@ -68,27 +80,37 @@ public struct MockEngineClient: EngineClientProtocol {
         try await Task.sleep(nanoseconds: 150_000_000)
 
         // Stage 9: Running Automated Tests
-        onProgress(.runningTests, 0.95, "Executed 4 unit tests for ViewModel & Cart calculations (100% passed)")
+        onProgress(
+            .runningTests,
+            0.95,
+            isSpoken ? "Executed 6 unit tests for SpokenEnglishViewModel & Streak/Scoring algorithms (100% passed)" : "Executed 4 unit tests for ViewModel & Cart calculations (100% passed)"
+        )
         try await Task.sleep(nanoseconds: 150_000_000)
 
         // Stage 10: Visual Validation
-        onProgress(.visualValidation, 0.98, "Simulating layout on iPhone 16 Pro... (99.4% structural match to Figma design)")
+        onProgress(
+            .visualValidation,
+            0.98,
+            isSpoken ? "Simulating layout on iPhone 16 Pro... (99.8% structural match to Figma design)" : "Simulating layout on iPhone 16 Pro... (99.4% structural match to Figma design)"
+        )
         try await Task.sleep(nanoseconds: 150_000_000)
 
         return Self.synthesizeResult(for: request)
     }
 
-    /// Provides immediate access to the synthesized Online Bike Shopping App generation result.
+    /// Provides immediate access to the synthesized generation result matching the configured Figma URL.
     public static func defaultPresetResult() -> GenerationResult {
-        let parsed = try? FigmaURL.parse(FigmaAppConfiguration.figmaURL)
+        let currentURL = FigmaAppConfiguration.figmaURL
+        let parsed = try? FigmaURL.parse(currentURL)
         let source: DesignSource
         if let p = parsed {
             source = .figmaURL(p)
         } else {
+            let isSpoken = currentURL.lowercased().contains("spoken") || currentURL.lowercased().contains("english")
             source = .figmaURL(FigmaURL(
-                rawString: FigmaAppConfiguration.figmaURL,
+                rawString: currentURL,
                 fileKey: "z3bsh0M4MFRN7HvwWuYT7e",
-                documentTitle: "Untitled",
+                documentTitle: isSpoken ? "Spoken_english" : "Untitled",
                 nodeId: "0:1"
             ))
         }
@@ -103,6 +125,51 @@ public struct MockEngineClient: EngineClientProtocol {
     }
 
     private static func synthesizeResult(for request: GenerationRequest) -> GenerationResult {
+        let urlStr = request.source.figmaURL?.rawString.lowercased() ?? ""
+        let docTitle = request.source.figmaURL?.documentTitle?.lowercased() ?? ""
+        let isSpoken = urlStr.contains("spoken") || urlStr.contains("english") || docTitle.contains("spoken") || docTitle.contains("english")
+
+        if isSpoken {
+            let output = SpokenEnglishArchitectureGenerator().generate(
+                targetDirectory: request.targetDirectory,
+                preferredFramework: request.preferredFramework
+            )
+            let visualDiff = VisualDiffReport(
+                similarityScore: 0.998,
+                acceptanceThreshold: request.visualAcceptanceThreshold,
+                iterationCount: 1,
+                testedDevices: ["iPhone 16 Pro", "iPhone 15 Pro Max"],
+                discrepancies: []
+            )
+            let buildReport = BuildReport(
+                isSuccess: true,
+                durationSeconds: 1.1,
+                compilerWarnings: [],
+                compilerErrors: [],
+                fixedErrorsCount: 0,
+                targetEnvironment: "Apple Swift 6.0 (iOS 16.0+)",
+                rawLog: "Build succeeded cleanly: 0 compiler errors."
+            )
+            let testReport = TestReport(
+                totalTests: 6,
+                passedTests: 6,
+                failedTests: 0,
+                durationSeconds: 0.32,
+                testSuites: ["SpokenEnglishViewModelTests", "PronunciationScoreTests"],
+                isSuccess: true
+            )
+            return GenerationResult(
+                source: request.source,
+                generatedFiles: output.files,
+                tokens: output.tokens,
+                visualDiff: visualDiff,
+                screenName: "SpokenEnglishHome",
+                architectureSummary: output.summary,
+                buildReport: buildReport,
+                testReport: testReport
+            )
+        }
+
         let screenTitle = "OnlineBikeCatalog"
         let sanitizedName = screenTitle
 

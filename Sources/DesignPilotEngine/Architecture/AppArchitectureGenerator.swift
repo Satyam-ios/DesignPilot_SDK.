@@ -5,11 +5,8 @@ import DesignPilotSDK
 public struct AppArchitectureGenerator: Sendable {
     public init() {}
 
-    /// Output of the architectural generator containing all source files and architectural metrics.
-    public struct ArchitectureOutput: Sendable {
-        public let files: [GeneratedFile]
-        public let summary: AppArchitectureSummary
-    }
+    /// Output of the architectural generator containing all source files, architectural metrics, and tokens.
+    public typealias ArchitectureOutput = AppArchitectureOutput
 
     /// Generates the complete application architecture based on analyzed screen and tokens.
     public func generateArchitecture(
@@ -20,6 +17,16 @@ public struct AppArchitectureGenerator: Sendable {
         sourceName: String = "Online Bike Shopping App"
     ) -> ArchitectureOutput {
         let cleanName = sanitize(screenName)
+
+        if sourceName.localizedCaseInsensitiveContains("spoken") ||
+           sourceName.localizedCaseInsensitiveContains("english") ||
+           cleanName.localizedCaseInsensitiveContains("spoken") ||
+           cleanName.localizedCaseInsensitiveContains("english") {
+            return SpokenEnglishArchitectureGenerator().generate(
+                targetDirectory: targetDirectory,
+                preferredFramework: preferredFramework
+            )
+        }
 
         let appFile = generateAppEntry(screenName: cleanName, targetDirectory: targetDirectory)
         let routeFile = generateAppRoute(screenName: cleanName, targetDirectory: targetDirectory)
@@ -94,7 +101,7 @@ public struct AppArchitectureGenerator: Sendable {
             ]
         )
 
-        return ArchitectureOutput(files: files, summary: summary)
+        return ArchitectureOutput(files: files, summary: summary, tokens: tokens)
     }
 
     private func sanitize(_ name: String) -> String {

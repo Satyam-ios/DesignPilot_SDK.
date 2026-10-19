@@ -270,7 +270,16 @@ public struct GenerationCompletionReportView: View {
     private var bootstrapActionCard: some View {
         VStack(spacing: 14) {
             // Bootstrap Toggle
-            Toggle(isOn: $isBootstrapEnabled) {
+            Toggle(
+                isOn: Binding(
+                    get: { isBootstrapEnabled },
+                    set: { newValue in
+                        isBootstrapEnabled = newValue
+                        FigmaAppConfiguration.isGenerationBootstrapEnabled = newValue
+                        showToast(newValue ? "Generation Bootstrap enabled" : "Generation Bootstrap disabled")
+                    }
+                )
+            ) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Generation Bootstrap Mode")
                         .font(.system(size: 14, weight: .semibold))
@@ -278,10 +287,6 @@ public struct GenerationCompletionReportView: View {
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
-            }
-            .onChange(of: isBootstrapEnabled) { _, newValue in
-                FigmaAppConfiguration.isGenerationBootstrapEnabled = newValue
-                showToast(newValue ? "Generation Bootstrap enabled" : "Generation Bootstrap disabled")
             }
 
             Divider()

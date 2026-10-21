@@ -1903,88 +1903,91 @@ public struct SpokenEnglishArchitectureGenerator: Sendable {
     private func generateSpokenEnglishStoryboard(targetDirectory: String) -> GeneratedFile {
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="TAB_ROOT_VC">
+        <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="tab-01-bar">
             <device id="retina6_12" orientation="portrait" appearance="light"/>
             <dependencies>
-                <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22504"/>
+                <deployment identifier="iOS"/>
+                <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23504"/>
                 <capability name="Safe area layout guides" minToolsVersion="9.0"/>
                 <capability name="System colors in document resources" minToolsVersion="11.0"/>
                 <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
             </dependencies>
             <scenes>
-                <scene sceneID="TAB_SCENE">
+                <!--Tab Bar Controller-->
+                <scene sceneID="scn-tab-01">
                     <objects>
-                        <tabBarController id="TAB_ROOT_VC" customClass="SpokenEnglishTabBarController" sceneMemberID="viewController">
-                            <tabBar key="tabBar" contentMode="scaleToFill" id="TAB_BAR_ID">
+                        <tabBarController id="tab-01-bar" customClass="SpokenEnglishTabBarController" sceneMemberID="viewController">
+                            <tabBar key="tabBar" contentMode="scaleToFill" id="bar-tab-01">
                                 <rect key="frame" x="0.0" y="0.0" width="393" height="49"/>
                                 <autoresizingMask key="autoresizingMask"/>
                             </tabBar>
                             <connections>
-                                <segue destination="HOME_VC_ID" kind="relationship" relationship="viewControllers" id="SEG_HOME"/>
+                                <segue destination="hm-01-vcc" kind="relationship" relationship="viewControllers" id="seg-tab-01"/>
                             </connections>
                         </tabBarController>
-                        <placeholder placeholderIdentifier="IBFirstResponder" id="TAB_RESP" sceneMemberID="firstResponder"/>
+                        <placeholder placeholderIdentifier="IBFirstResponder" id="rsp-tab-01" sceneMemberID="firstResponder"/>
                     </objects>
-                    <point key="canvasLocation" x="-500" y="0"/>
+                    <point key="canvasLocation" x="-500" y="0.0"/>
                 </scene>
-                <scene sceneID="HOME_SCENE">
+                <!--Daily Target-->
+                <scene sceneID="scn-hom-01">
                     <objects>
-                        <viewController id="HOME_VC_ID" customClass="HomeDailyTargetViewController" sceneMemberID="viewController">
-                            <view key="view" contentMode="scaleToFill" id="HOME_VIEW">
+                        <viewController id="hm-01-vcc" customClass="HomeDailyTargetViewController" sceneMemberID="viewController">
+                            <view key="view" contentMode="scaleToFill" id="viw-hom-01">
                                 <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Good Morning, Satyam" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GREET_LBL">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Good Morning, Satyam" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="lbl-greet-01">
                                         <rect key="frame" x="20" y="103" width="280" height="26"/>
                                         <fontDescription key="fontDescription" type="system" weight="bold" pointSize="22"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="5 Days" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="STREAK_LBL">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="5 Days" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="lbl-strk-01">
                                         <rect key="frame" x="310" y="103" width="63" height="26"/>
                                         <fontDescription key="fontDescription" type="system" weight="bold" pointSize="14"/>
                                     </label>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="HERO_CARD">
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="viw-hero-01">
                                         <rect key="frame" x="20" y="149" width="353" height="160"/>
                                         <color key="backgroundColor" red="0.1215686275" green="0.3803921569" blue="0.8784313725" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="160" id="HERO_H"/>
+                                            <constraint firstAttribute="height" constant="160" id="cst-hero-h"/>
                                         </constraints>
                                     </view>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CONT_BTN">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="btn-cont-01">
                                         <rect key="frame" x="20" y="329" width="353" height="44"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="44" id="BTN_H"/>
+                                            <constraint firstAttribute="height" constant="44" id="cst-btn-h"/>
                                         </constraints>
                                         <state key="normal" title="Continue Learning"/>
                                         <connections>
-                                            <action selector="continueLearningTapped:" destination="HOME_VC_ID" eventType="touchUpInside" id="ACT_CONT"/>
+                                            <action selector="continueLearningTapped:" destination="hm-01-vcc" eventType="touchUpInside" id="act-cont-01"/>
                                         </connections>
                                     </button>
                                 </subviews>
-                                <viewLayoutGuide key="safeArea" id="SAFE_HOME"/>
+                                <viewLayoutGuide key="safeArea" id="saf-hom-01"/>
                                 <color key="backgroundColor" red="0.9568627451" green="0.9647058824" blue="0.9843137255" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <constraints>
-                                    <constraint firstItem="GREET_LBL" firstAttribute="leading" secondItem="SAFE_HOME" secondAttribute="leading" constant="20" id="C_GREET_L"/>
-                                    <constraint firstItem="GREET_LBL" firstAttribute="top" secondItem="SAFE_HOME" secondAttribute="top" id="C_GREET_T"/>
-                                    <constraint firstItem="SAFE_HOME" firstAttribute="trailing" secondItem="STREAK_LBL" secondAttribute="trailing" constant="20" id="C_STRK_R"/>
-                                    <constraint firstItem="HERO_CARD" firstAttribute="top" secondItem="GREET_LBL" secondAttribute="bottom" constant="20" id="C_HERO_T"/>
-                                    <constraint firstItem="HERO_CARD" firstAttribute="leading" secondItem="SAFE_HOME" secondAttribute="leading" constant="20" id="C_HERO_L"/>
-                                    <constraint firstItem="SAFE_HOME" firstAttribute="trailing" secondItem="HERO_CARD" secondAttribute="trailing" constant="20" id="C_HERO_R"/>
-                                    <constraint firstItem="CONT_BTN" firstAttribute="top" secondItem="HERO_CARD" secondAttribute="bottom" constant="20" id="C_BTN_T"/>
-                                    <constraint firstItem="CONT_BTN" firstAttribute="leading" secondItem="SAFE_HOME" secondAttribute="leading" constant="20" id="C_BTN_L"/>
-                                    <constraint firstItem="SAFE_HOME" firstAttribute="trailing" secondItem="CONT_BTN" secondAttribute="trailing" constant="20" id="C_BTN_R"/>
+                                    <constraint firstItem="lbl-greet-01" firstAttribute="leading" secondItem="saf-hom-01" secondAttribute="leading" constant="20" id="cst-grt-l"/>
+                                    <constraint firstItem="lbl-greet-01" firstAttribute="top" secondItem="saf-hom-01" secondAttribute="top" id="cst-grt-t"/>
+                                    <constraint firstItem="saf-hom-01" firstAttribute="trailing" secondItem="lbl-strk-01" secondAttribute="trailing" constant="20" id="cst-str-r"/>
+                                    <constraint firstItem="viw-hero-01" firstAttribute="top" secondItem="lbl-greet-01" secondAttribute="bottom" constant="20" id="cst-her-t"/>
+                                    <constraint firstItem="viw-hero-01" firstAttribute="leading" secondItem="saf-hom-01" secondAttribute="leading" constant="20" id="cst-her-l"/>
+                                    <constraint firstItem="saf-hom-01" firstAttribute="trailing" secondItem="viw-hero-01" secondAttribute="trailing" constant="20" id="cst-her-r"/>
+                                    <constraint firstItem="btn-cont-01" firstAttribute="top" secondItem="viw-hero-01" secondAttribute="bottom" constant="20" id="cst-btn-t"/>
+                                    <constraint firstItem="btn-cont-01" firstAttribute="leading" secondItem="saf-hom-01" secondAttribute="leading" constant="20" id="cst-btn-l"/>
+                                    <constraint firstItem="saf-hom-01" firstAttribute="trailing" secondItem="btn-cont-01" secondAttribute="trailing" constant="20" id="cst-btn-r"/>
                                 </constraints>
                             </view>
-                            <tabBarItem key="tabBarItem" title="Daily Target" image="target" catalog="system" id="TAB_ITEM_HOME"/>
+                            <tabBarItem key="tabBarItem" title="Daily Target" image="target" catalog="system" id="tbi-hom-01"/>
                             <connections>
-                                <outlet property="greetingLabel" destination="GREET_LBL" id="OUT_GREET"/>
-                                <outlet property="streakBadgeLabel" destination="STREAK_LBL" id="OUT_STRK"/>
-                                <outlet property="targetHeroCardView" destination="HERO_CARD" id="OUT_HERO"/>
-                                <outlet property="continueButton" destination="CONT_BTN" id="OUT_CONT"/>
+                                <outlet property="greetingLabel" destination="lbl-greet-01" id="out-grt-01"/>
+                                <outlet property="streakBadgeLabel" destination="lbl-strk-01" id="out-str-01"/>
+                                <outlet property="targetHeroCardView" destination="viw-hero-01" id="out-her-01"/>
+                                <outlet property="continueButton" destination="btn-cont-01" id="out-btn-01"/>
                             </connections>
                         </viewController>
-                        <placeholder placeholderIdentifier="IBFirstResponder" id="HOME_RESP" sceneMemberID="firstResponder"/>
+                        <placeholder placeholderIdentifier="IBFirstResponder" id="rsp-hom-01" sceneMemberID="firstResponder"/>
                     </objects>
-                    <point key="canvasLocation" x="300" y="0"/>
+                    <point key="canvasLocation" x="300" y="0.0"/>
                 </scene>
             </scenes>
             <resources>
@@ -1993,7 +1996,7 @@ public struct SpokenEnglishArchitectureGenerator: Sendable {
         </document>
         """
         return GeneratedFile(
-            relativePath: "\(targetDirectory)/Storyboards/Main.storyboard",
+            relativePath: "\(targetDirectory)/Storyboards/SpokenEnglish.storyboard",
             content: xml,
             status: .created,
             framework: .uiKit
@@ -2001,12 +2004,6 @@ public struct SpokenEnglishArchitectureGenerator: Sendable {
     }
 
     private func generateSpokenEnglishNamedStoryboard(targetDirectory: String) -> GeneratedFile {
-        let file = generateSpokenEnglishStoryboard(targetDirectory: targetDirectory)
-        return GeneratedFile(
-            relativePath: "\(targetDirectory)/Storyboards/SpokenEnglish.storyboard",
-            content: file.content,
-            status: .created,
-            framework: .uiKit
-        )
+        return generateSpokenEnglishStoryboard(targetDirectory: targetDirectory)
     }
 }

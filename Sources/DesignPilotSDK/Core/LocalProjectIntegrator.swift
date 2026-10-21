@@ -64,7 +64,31 @@ public struct LocalProjectIntegrator: Sendable {
         try fileManager.createDirectory(at: dest.generatedFilesURL, withIntermediateDirectories: true)
 
         for file in filesToWrite {
+            // Handle unit test isolation: do not pollute main app target with XCTest imports
+            if file.framework == .unitTest {
+                let testTargetDir = dest.projectRootURL.appendingPathComponent("\(dest.projectName)Tests")
+                if fileManager.fileExists(atPath: testTargetDir.path) {
+                    let testGenDir = testTargetDir.appendingPathComponent("Generated")
+                    let relativeSubpath = cleanSubpath(for: file.relativePath)
+                    let testFileURL = testGenDir.appendingPathComponent(relativeSubpath)
+                    try? fileManager.createDirectory(at: testFileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try? file.content.data(using: .utf8)?.write(to: testFileURL, options: .atomic)
+                    addedFiles.append("\(dest.projectName)Tests/Generated/\(relativeSubpath)")
+                }
+                continue
+            }
+
             let relativeSubpath = cleanSubpath(for: file.relativePath)
+
+            // Prevent duplicate Main.storyboard build collision if host project already has Base.lproj/Main.storyboard
+            if relativeSubpath.contains("Main.storyboard") {
+                let existingMain = dest.sourceDirectoryURL.appendingPathComponent("Base.lproj/Main.storyboard")
+                let existingDirect = dest.sourceDirectoryURL.appendingPathComponent("Main.storyboard")
+                if fileManager.fileExists(atPath: existingMain.path) || fileManager.fileExists(atPath: existingDirect.path) {
+                    continue
+                }
+            }
+
             let destinationFileURL = dest.generatedFilesURL.appendingPathComponent(relativeSubpath)
             let destinationParent = destinationFileURL.deletingLastPathComponent()
 
@@ -98,6 +122,7 @@ public struct LocalProjectIntegrator: Sendable {
         if mirrorRoot.path != dest.generatedFilesURL.path {
             try? fileManager.createDirectory(at: mirrorRoot, withIntermediateDirectories: true)
             for file in filesToWrite {
+                if file.framework == .unitTest { continue }
                 let sub = cleanSubpath(for: file.relativePath)
                 let mirrorFile = mirrorRoot.appendingPathComponent(sub)
                 try? fileManager.createDirectory(at: mirrorFile.deletingLastPathComponent(), withIntermediateDirectories: true)

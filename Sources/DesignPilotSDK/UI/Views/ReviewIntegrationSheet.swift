@@ -8,6 +8,11 @@ public struct ReviewIntegrationSheet: View {
     @State private var selectedFilePaths: Set<String>
     @State private var activeFile: GeneratedFile?
     @State private var activeTab: Int = 0 // 0: Architecture & Build, 1: Files & Code, 2: Visual Comparison, 3: Tokens
+    @State private var isIntegrating: Bool = false
+    @State private var integrationSummary: IntegrationSummary? = nil
+    @State private var integrationErrorMessage: String? = nil
+    @State private var isShowingSuccessAlert: Bool = false
+    @State private var isShowingErrorAlert: Bool = false
 
     public init(result: GenerationResult, onIntegrate: @escaping (Set<String>) -> Void) {
         self.result = result
@@ -60,6 +65,22 @@ public struct ReviewIntegrationSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
+            }
+            .alert("Integration Succeeded", isPresented: $isShowingSuccessAlert) {
+                Button("Done") {
+                    dismiss()
+                }
+            } message: {
+                if let summary = integrationSummary {
+                    Text("Successfully wrote \(summary.addedFiles.count) file(s) into:\n\(summary.targetDirectory)\n\nAll files are now immediately visible and editable in Xcode.")
+                } else {
+                    Text("Selected files were successfully integrated into your project.")
+                }
+            }
+            .alert("Integration Failed", isPresented: $isShowingErrorAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(integrationErrorMessage ?? "An unknown error occurred while writing files to disk.")
             }
         }
     }
@@ -340,25 +361,64 @@ public struct ReviewIntegrationSheet: View {
 
             Spacer()
 
-            Button(action: {
-                onIntegrate(selectedFilePaths)
-                dismiss()
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.down.doc.fill")
-                    Text("Integrate into Project")
-                        .fontWeight(.semibold)
+            if isIntegrating {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(.white)
+                    Text("Writing Files...")
+                        .font(.system(size: 14, weight: .semibold))
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(selectedFilePaths.isEmpty ? Color.gray : Color.blue)
+                .background(Color.blue)
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                Button(action: {
+                    performIntegration()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down.doc.fill")
+                        Text("Integrate into Project")
+                            .fontWeight(.semibold)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(selectedFilePaths.isEmpty ? Color.gray : Color.blue)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .disabled(selectedFilePaths.isEmpty)
             }
-            .disabled(selectedFilePaths.isEmpty)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.dpSecondaryBackground)
+    }
+
+    private func performIntegration() {
+        isIntegrating = true
+        onIntegrate(selectedFilePaths)
+
+        Task {
+            do {
+                let summary = try LocalProjectIntegrator.shared.integrate(
+                    files: result.generatedFiles,
+                    selectedPaths: selectedFilePaths
+                )
+                await MainActor.run {
+                    self.integrationSummary = summary
+                    self.isIntegrating = false
+                    self.isShowingSuccessAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.integrationErrorMessage = error.localizedDescription
+                    self.isIntegrating = false
+                    self.isShowingErrorAlert = true
+                }
+            }
+        }
     }
 }

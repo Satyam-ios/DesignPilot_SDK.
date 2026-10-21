@@ -64,16 +64,22 @@ public struct IntegrationRequest: Codable, Sendable {
     public let selectedFiles: [String]
     public let createBackup: Bool
     public let targetDirectory: String
+    public let generatedFiles: [GeneratedFile]?
+    public let projectRootPath: String?
 
     public init(
         resultId: UUID,
         selectedFiles: [String],
         createBackup: Bool = true,
-        targetDirectory: String = "Views/Generated"
+        targetDirectory: String = "Views/Generated",
+        generatedFiles: [GeneratedFile]? = nil,
+        projectRootPath: String? = nil
     ) {
         self.resultId = resultId
         self.selectedFiles = selectedFiles
         self.createBackup = createBackup
         self.targetDirectory = targetDirectory
+        self.generatedFiles = generatedFiles
+        self.projectRootPath = projectRootPath
     }
 }

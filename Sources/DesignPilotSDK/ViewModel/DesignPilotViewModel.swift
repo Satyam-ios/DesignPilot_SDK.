@@ -29,6 +29,9 @@ public final class DesignPilotViewModel: ObservableObject {
     @Published public var isReviewPresented: Bool = false
     @Published public var isSettingsPresented: Bool = false
     @Published public var isFileImporterPresented: Bool = false
+    @Published public var isIntegrating: Bool = false
+    @Published public var integrationSuccessToast: String? = nil
+    @Published public var integrationErrorMessage: String? = nil
 
     public let configuration: DesignPilotConfiguration
     private let client: EngineClientProtocol
@@ -263,32 +266,57 @@ public final class DesignPilotViewModel: ObservableObject {
     }
 
     /// Integrates the approved generated files into the target Xcode project.
-    public func integrateFiles(selectedFiles: [String]) {
-        guard let result = lastResult else { return }
+    public func integrateFiles(
+        selectedFiles: [String] = [],
+        completion: (@Sendable (Result<IntegrationSummary, Error>) -> Void)? = nil
+    ) {
+        guard let result = lastResult ?? presetResult else {
+            completion?(.failure(DesignPilotError.unknown("No generation result available.")))
+            return
+        }
 
         let request = IntegrationRequest(
             resultId: result.id,
             selectedFiles: selectedFiles,
             createBackup: true,
-            targetDirectory: configuration.defaultTargetDirectory
+            targetDirectory: configuration.defaultTargetDirectory,
+            generatedFiles: result.generatedFiles,
+            projectRootPath: FigmaAppConfiguration.projectRootPath
         )
+
+        self.isIntegrating = true
+        self.state = .integrating(progress: 0.5)
+        self.statusMessage = "Writing generated files into project..."
 
         Task {
             do {
-                self.state = .integrating(progress: 0.5)
-                self.statusMessage = "Creating rollback point and committing files..."
                 let summary = try await client.integrate(request: request)
-                self.lastIntegrationSummary = summary
-                self.state = .completed(summary)
-                self.currentStage = .completed
-                self.statusMessage = "Successfully integrated \(summary.addedFiles.count) file(s). Backup: \(summary.backupId)"
+                await MainActor.run {
+                    self.lastIntegrationSummary = summary
+                    self.state = .completed(summary)
+                    self.currentStage = .completed
+                    self.isIntegrating = false
+                    self.statusMessage = "Successfully integrated \(summary.addedFiles.count) file(s) into \(summary.targetDirectory)."
+                    self.integrationSuccessToast = "Successfully integrated \(summary.addedFiles.count) files into \(summary.targetDirectory)!"
+                    completion?(.success(summary))
+                }
             } catch let err as DesignPilotError {
-                self.state = .failed(err, retryStage: .integrating)
-                self.statusMessage = err.localizedDescription
+                await MainActor.run {
+                    self.state = .failed(err, retryStage: .integrating)
+                    self.statusMessage = err.localizedDescription
+                    self.integrationErrorMessage = err.localizedDescription
+                    self.isIntegrating = false
+                    completion?(.failure(err))
+                }
             } catch {
-                let wrapped = DesignPilotError.unknown(error.localizedDescription)
-                self.state = .failed(wrapped, retryStage: .integrating)
-                self.statusMessage = wrapped.localizedDescription
+                await MainActor.run {
+                    let wrapped = DesignPilotError.unknown(error.localizedDescription)
+                    self.state = .failed(wrapped, retryStage: .integrating)
+                    self.statusMessage = wrapped.localizedDescription
+                    self.integrationErrorMessage = wrapped.localizedDescription
+                    self.isIntegrating = false
+                    completion?(.failure(error))
+                }
             }
         }
     }

@@ -41,6 +41,12 @@ public enum FigmaAppConfiguration {
     /// Optional Figma personal access token or OAuth credential for accessing private files.
     nonisolated(unsafe) public static var figmaAccessToken: String? = nil
 
+    /// Optional explicit project root path override. If nil, automatically discovered from project files.
+    nonisolated(unsafe) public static var projectRootPath: String? = nil
+
+    /// Discovered or configured caller source file path.
+    nonisolated(unsafe) public static var configuredCallerFilePath: String? = nil
+
     /// When true, the app automatically starts analysis, code generation, and launch immediately upon running.
     nonisolated(unsafe) public static var autoGenerateOnLaunch: Bool = true
 
@@ -110,12 +116,16 @@ public final class DesignPilot: NSObject {
     ///   - figmaAccessToken: Optional Figma personal access token for private designs.
     ///   - autoGenerateOnLaunch: Whether to generate and launch automatically on app launch.
     ///   - isGenerationBootstrapEnabled: Optional flag to explicitly enable or disable generation bootstrap.
+    ///   - projectRootPath: Optional explicit project root path override.
+    ///   - callerFilePath: Automatically captured caller source file path used to discover target project.
     public static func configure(
         figmaURL: String,
         uiFramework: UIFramework = .automatic,
         figmaAccessToken: String? = nil,
         autoGenerateOnLaunch: Bool = true,
-        isGenerationBootstrapEnabled: Bool? = nil
+        isGenerationBootstrapEnabled: Bool? = nil,
+        projectRootPath: String? = nil,
+        callerFilePath: StaticString = #filePath
     ) {
         let previousURL = UserDefaults.standard.string(forKey: FigmaAppConfiguration.lastConfiguredURLKey)
         let isDifferentURL = (previousURL != nil && !previousURL!.isEmpty && previousURL != figmaURL)
@@ -125,6 +135,10 @@ public final class DesignPilot: NSObject {
         FigmaAppConfiguration.uiFramework = uiFramework
         FigmaAppConfiguration.figmaAccessToken = figmaAccessToken
         FigmaAppConfiguration.autoGenerateOnLaunch = autoGenerateOnLaunch
+        if let root = projectRootPath {
+            FigmaAppConfiguration.projectRootPath = root
+        }
+        FigmaAppConfiguration.configuredCallerFilePath = "\(callerFilePath)"
 
         // If the developer provided a different URL at runtime, it must take precedence
         // over any previous completion or cached bootstrap state.

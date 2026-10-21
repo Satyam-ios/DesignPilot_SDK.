@@ -29,6 +29,9 @@ public struct DesignPilotContentView: View {
                     },
                     onReviewFiles: {
                         viewModel.isReviewPresented = true
+                    },
+                    onIntegrateProject: {
+                        viewModel.integrateFiles()
                     }
                 )
             } else if case .completed = viewModel.state, let result = viewModel.lastResult {
@@ -39,6 +42,9 @@ public struct DesignPilotContentView: View {
                     },
                     onReviewFiles: {
                         viewModel.isReviewPresented = true
+                    },
+                    onIntegrateProject: {
+                        viewModel.integrateFiles()
                     }
                 )
             } else if case .inProgress(let stage, let progress, let message) = viewModel.state {

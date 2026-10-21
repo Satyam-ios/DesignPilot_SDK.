@@ -115,9 +115,10 @@ public struct MockEngineClient: EngineClientProtocol {
                 nodeId: "0:1"
             ))
         }
+        let isUIKit = (FigmaAppConfiguration.uiFramework == .uiKit) || (FigmaAppConfiguration.uiFramework == .automatic && ProjectLocator.isHostProjectUIKit())
         let req = GenerationRequest(
             source: source,
-            preferredFramework: (FigmaAppConfiguration.uiFramework == .uiKit) ? .uiKit : .swiftUI,
+            preferredFramework: isUIKit ? .uiKit : .swiftUI,
             targetDirectory: "Views/Generated",
             visualAcceptanceThreshold: 0.95,
             maxVisualIterations: 3
@@ -1040,20 +1041,28 @@ public struct MockEngineClient: EngineClientProtocol {
     }
 
     public func integrate(request: IntegrationRequest) async throws -> IntegrationSummary {
-        try await Task.sleep(nanoseconds: 600_000_000)
-        let backupId = "backup_\(Int(Date().timeIntervalSince1970))"
-        return IntegrationSummary(
-            backupId: backupId,
-            backupPath: ".designpilot/backups/\(backupId)",
-            addedFiles: request.selectedFiles,
-            modifiedFiles: [],
-            preservedFiles: ["ContentView.swift", "AppDelegate.swift"],
-            targetDirectory: request.targetDirectory
+        try await Task.sleep(nanoseconds: 200_000_000)
+
+        let filesToWrite: [GeneratedFile]
+        if let reqFiles = request.generatedFiles, !reqFiles.isEmpty {
+            filesToWrite = reqFiles
+        } else {
+            let output = SpokenEnglishArchitectureGenerator().generate(
+                preferredFramework: .uiKit
+            )
+            filesToWrite = output.files
+        }
+
+        let selectedPaths: Set<String>? = request.selectedFiles.isEmpty ? nil : Set(request.selectedFiles)
+        return try LocalProjectIntegrator.shared.integrate(
+            files: filesToWrite,
+            selectedPaths: selectedPaths,
+            createBackup: request.createBackup
         )
     }
 
     public func rollback(backupId: String) async throws -> Bool {
-        try await Task.sleep(nanoseconds: 400_000_000)
-        return true
+        try await Task.sleep(nanoseconds: 200_000_000)
+        return try LocalProjectIntegrator.shared.rollback(backupId: backupId)
     }
 }

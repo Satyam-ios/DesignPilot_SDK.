@@ -7,19 +7,26 @@ public struct GenerationCompletionReportView: View {
     public let result: GenerationResult
     public let onLaunchDirectly: () -> Void
     public let onReviewFiles: () -> Void
+    public let onIntegrateProject: (() -> Void)?
 
     @State private var isBootstrapEnabled: Bool = FigmaAppConfiguration.isGenerationBootstrapEnabled
     @State private var isShowingToast: Bool = false
     @State private var toastMessage: String = ""
+    @State private var isIntegrating: Bool = false
+    @State private var integrationSummary: IntegrationSummary? = nil
+    @State private var showIntegrationAlert: Bool = false
+    @State private var integrationErrorMessage: String? = nil
 
     public init(
         result: GenerationResult,
         onLaunchDirectly: @escaping () -> Void,
-        onReviewFiles: @escaping () -> Void
+        onReviewFiles: @escaping () -> Void,
+        onIntegrateProject: (() -> Void)? = nil
     ) {
         self.result = result
         self.onLaunchDirectly = onLaunchDirectly
         self.onReviewFiles = onReviewFiles
+        self.onIntegrateProject = onIntegrateProject
     }
 
     public var body: some View {
@@ -55,6 +62,15 @@ public struct GenerationCompletionReportView: View {
                 toastView
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .padding(.bottom, 24)
+            }
+        }
+        .alert("Integration Succeeded", isPresented: $showIntegrationAlert) {
+            Button("Done", role: .cancel) {}
+        } message: {
+            if let summary = integrationSummary {
+                Text("Successfully wrote \(summary.addedFiles.count) file(s) into:\n\(summary.targetDirectory)\n\nAll files are now immediately visible and editable in Xcode.")
+            } else {
+                Text("All generated UI files were successfully integrated into your project.")
             }
         }
     }
@@ -291,7 +307,32 @@ public struct GenerationCompletionReportView: View {
 
             Divider()
 
-            // Primary Action: Disable Bootstrap & Launch App Directly
+            // Primary Action 1: Integrate into Project
+            Button(action: {
+                performDirectIntegration()
+            }) {
+                HStack(spacing: 8) {
+                    if isIntegrating {
+                        ProgressView().tint(.white)
+                        Text("Writing Files to Project...")
+                            .fontWeight(.bold)
+                    } else {
+                        Image(systemName: "arrow.down.doc.fill")
+                        Text("Integrate into Project")
+                            .fontWeight(.bold)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: Color.blue.opacity(0.35), radius: 8, y: 4)
+            }
+            .disabled(isIntegrating)
+            .buttonStyle(.plain)
+
+            // Primary Action 2: Disable Bootstrap & Launch App Directly
             Button(action: {
                 FigmaAppConfiguration.disableGenerationBootstrap()
                 isBootstrapEnabled = false
@@ -309,14 +350,14 @@ public struct GenerationCompletionReportView: View {
                 .padding(.vertical, 14)
                 .background(
                     LinearGradient(
-                        colors: [.blue, .purple],
+                        colors: [.indigo, .purple],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
                 )
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: Color.blue.opacity(0.35), radius: 8, y: 4)
+                .shadow(color: Color.purple.opacity(0.35), radius: 8, y: 4)
             }
             .buttonStyle(.plain)
 
@@ -354,6 +395,29 @@ public struct GenerationCompletionReportView: View {
         .padding(16)
         .background(Color.dpSecondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func performDirectIntegration() {
+        isIntegrating = true
+        onIntegrateProject?()
+
+        Task {
+            do {
+                let summary = try LocalProjectIntegrator.shared.integrate(files: result.generatedFiles)
+                await MainActor.run {
+                    self.integrationSummary = summary
+                    self.isIntegrating = false
+                    self.showIntegrationAlert = true
+                    showToast("Successfully integrated \(summary.addedFiles.count) files into project!")
+                }
+            } catch {
+                await MainActor.run {
+                    self.integrationErrorMessage = error.localizedDescription
+                    self.isIntegrating = false
+                    showToast("Integration error: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     private func showToast(_ msg: String) {

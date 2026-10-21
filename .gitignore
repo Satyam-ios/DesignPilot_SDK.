@@ -3,6 +3,6 @@
 .DS_Store
 *.swp
 *~
-.designpilot/staging/
-.designpilot/backups/
+.designpilot/
+Generated/
 /Views/

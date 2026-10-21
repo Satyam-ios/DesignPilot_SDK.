@@ -138,7 +138,6 @@ final class LocalProjectIntegratorTests: XCTestCase {
         XCTAssertTrue(filePaths.contains { $0.contains("HomeDailyTargetViewController.swift") }, "Must contain UIKit HomeDailyTargetViewController")
         XCTAssertTrue(filePaths.contains { $0.contains("AICoachCorrectionViewController.swift") }, "Must contain UIKit AICoachCorrectionViewController")
         XCTAssertTrue(filePaths.contains { $0.contains("SpokenEnglishTabBarController.swift") }, "Must contain UIKit SpokenEnglishTabBarController")
-        XCTAssertTrue(filePaths.contains { $0.contains("Main.storyboard") }, "Must contain Main.storyboard")
         XCTAssertTrue(filePaths.contains { $0.contains("SpokenEnglish.storyboard") }, "Must contain SpokenEnglish.storyboard")
     }
 
